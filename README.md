@@ -1,3 +1,7 @@
+# TFG-SelfTalk
+
+Selftalk-powered Talking Face Generation System
+
 需要重写 README
 
 <!-- # 说话人脸生成对话系统
