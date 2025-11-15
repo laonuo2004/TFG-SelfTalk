@@ -13,8 +13,9 @@ def test(args, model, test_loader, epoch):
     result_path = result_path + '_' + str(args.feature_dim) + '_' + str(time.strftime("%m_%d_%H_%M", time.localtime()))
     os.makedirs(result_path, exist_ok=True)
 
+    save_path = os.path.join(args.dataset, args.save_path)
     model.load_state_dict(
-        torch.load(os.path.join(args.save_path, '{}_model.pth'.format(epoch)), map_location=torch.device('cpu')))
+        torch.load(os.path.join(save_path, '{}_model.pth'.format(epoch)), map_location=torch.device('cpu')))
     model = model.to(args.device)
     model.eval()
 

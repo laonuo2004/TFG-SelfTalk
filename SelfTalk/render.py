@@ -108,7 +108,7 @@ def render_mesh_helper(args, mesh, t_center, rot=np.zeros(3), tex_img=None, z_of
     return color[..., ::-1]
 
 
-def render_sequence_meshes(args, sequence_vertices, template, out_path, predicted_vertices_path, vt, ft, tex_img):
+def render_sequence_meshes(args, sequence_vertices, template, out_path, predicted_vertices_path, vt, ft, tex_img, audio_fname=None):
     num_frames = sequence_vertices.shape[0]
     file_name_pred = predicted_vertices_path.split('/')[-1].split('.')[0]
     tmp_video_file_pred = tempfile.NamedTemporaryFile('w', suffix='.mp4', dir=out_path)
@@ -126,8 +126,15 @@ def render_sequence_meshes(args, sequence_vertices, template, out_path, predicte
         writer_pred.write(img)
 
     writer_pred.release()
-    cmd = ('ffmpeg' + ' -i {0} -pix_fmt yuv420p -qscale 0 {1}'.format(
-        tmp_video_file_pred.name, video_fname_pred)).split()
+
+    if audio_fname is not None and os.path.exists(audio_fname):
+        # Include audio in the final video
+        cmd = ('ffmpeg' + ' -i {0} -i {1} -pix_fmt yuv420p -qscale 0 {2} -y'.format(
+            audio_fname, tmp_video_file_pred.name, video_fname_pred)).split()
+    else:
+        # No audio available, just convert video
+        cmd = ('ffmpeg' + ' -i {0} -pix_fmt yuv420p -qscale 0 {1}'.format(
+            tmp_video_file_pred.name, video_fname_pred)).split()
     call(cmd)
 
 
@@ -167,8 +174,21 @@ def main():
             predicted_vertices = np.load(predicted_vertices_path)
             predicted_vertices = np.reshape(predicted_vertices, (-1, args.vertice_dim // 3, 3))
 
+            # Find corresponding audio file
+            audio_fname = None
+            if args.dataset == "vocaset":
+                wav_dir = os.path.join(args.dataset, "wav")
+                base_name = file.replace('.npy', '.wav')
+                potential_audio = os.path.join(wav_dir, base_name)
+                if os.path.exists(potential_audio):
+                    audio_fname = potential_audio
+            elif args.dataset == "BIWI":
+                # BIWI dataset might have different audio file structure
+                # Add BIWI audio handling if needed
+                pass
+
             render_sequence_meshes(args, predicted_vertices, template, output_path, predicted_vertices_path, vt, ft,
-                                   tex_img)
+                                   tex_img, audio_fname)
 
 
 if __name__ == "__main__":

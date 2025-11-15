@@ -12,3 +12,6 @@ SyncTalk/SyncTalk/
 GPT-SoVITS/
 
 test_data/
+
+SelfTalk/vocaset/*
+!SelfTalk/vocaset/output/
