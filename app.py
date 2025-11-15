@@ -1,8 +1,4 @@
-from flask import Flask, render_template, request, jsonify
-import os
-from backend.video_generator import generate_video
-from backend.model_trainer import train_model
-from backend.chat_engine import chat_response
+from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
@@ -11,79 +7,44 @@ app = Flask(__name__)
 def index():
     return render_template('index.html')
 
-# 视频生成界面
-@app.route('/video_generation', methods=['GET', 'POST'])
-def video_generation():
-    if request.method == 'POST':
-        data = {
-            "model_name": request.form.get('model_name'),
-            "model_param": request.form.get('model_param'),
-            "ref_audio": request.form.get('ref_audio'),
-            "gpu_choice": request.form.get('gpu_choice'),
-            "target_text": request.form.get('target_text'),
-        }
-
-        video_path = generate_video(data)
-        return jsonify({'status': 'success', 'video_path': video_path})
-
-    return render_template('video_generation.html')
-
-
-# 模型训练界面
+# 模型训练页面 & 表单提交
 @app.route('/model_training', methods=['GET', 'POST'])
 def model_training():
+    video_path = None
     if request.method == 'POST':
-        data = {
-            "model_choice": request.form.get('model_choice'),
-            "ref_video": request.form.get('ref_video'),
-            "gpu_choice": request.form.get('gpu_choice'),
-            "epoch": request.form.get('epoch'),
-            "custom_params": request.form.get('custom_params')
-        }
+        # TODO: 后端同学在这里接“训练模型”的逻辑
+        # 前端现在只需要有个占位视频路径，方便调试界面
+        video_path = '/static/videos/sample.mp4'
+    return render_template('model_training.html', video_path=video_path)
 
-        video_path = train_model(data)
-        video_path = "/" + video_path.replace("\\", "/")
+# 视频生成页面 & 表单提交
+@app.route('/video_generation', methods=['GET', 'POST'])
+def video_generation():
+    video_path = None
+    if request.method == 'POST':
+        # TODO: 后端同学在这里接“生成视频”的逻辑
+        video_path = '/static/videos/sample.mp4'
+    return render_template('video_generation.html', video_path=video_path)
 
-        return jsonify({'status': 'success', 'video_path': video_path})
-
-    return render_template('model_training.html')
-
-
-# 实时对话系统界面
+# 人机对话页面 & 表单提交
 @app.route('/chat_system', methods=['GET', 'POST'])
 def chat_system():
+    video_path = None
     if request.method == 'POST':
-        data = {
-            "model_name": request.form.get('model_name'),
-            "model_param": request.form.get('model_param'),
-            "voice_clone": request.form.get('voice_clone'),
-            "api_choice": request.form.get('api_choice'),
-        }
+        # TODO: 后端同学在这里接“实时对话/语音克隆”的逻辑
+        video_path = '/static/videos/sample.mp4'
+    return render_template('chat_system.html', video_path=video_path)
 
-        video_path = chat_response(data)
-        video_path = "/" + video_path.replace("\\", "/")
-
-        return jsonify({'status': 'success', 'video_path': video_path})
-
-    return render_template('chat_system.html')
-
+# 录音上传接口（前端会用 fetch 调用）
 @app.route('/save_audio', methods=['POST'])
 def save_audio():
-    if 'audio' not in request.files:
-        return jsonify({'status': 'error', 'message': '没有音频文件'})
-    
-    audio_file = request.files['audio']
-    if audio_file.filename == '':
-        return jsonify({'status': 'error', 'message': '没有选择文件'})
-    
-    # 确保目录存在
-    os.makedirs('./static/audios', exist_ok=True)
-    
-    # 保存文件
-    audio_file.save('./static/audios/input.wav')
-    
-    return jsonify({'status': 'success', 'message': '音频保存成功'})
-
+    """
+    占位接口：
+    - 现在先不真正保存录音，只返回 'ok'
+    - 将来后端同学在这里读取 request.files[...]，按需保存即可
+    """
+    return 'ok'
 
 if __name__ == '__main__':
-    app.run(debug=True, port = 5001)
+    # 监听所有网卡，方便 VS Code 端口转发
+    app.run(host='0.0.0.0', port=5001, debug=True)
