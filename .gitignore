@@ -13,8 +13,10 @@ GPT-SoVITS/
 
 test_data/
 
+docs/AI/
 SelfTalk/vocaset/*
 !SelfTalk/vocaset/output/
 
 # other
 .specstory/
+.cursorindexingignore
