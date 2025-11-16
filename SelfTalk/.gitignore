@@ -1,0 +1,6 @@
+checkpoints/
+log/
+logs/
+
+vocaset/*
+!vocaset/output/

@@ -3,247 +3,469 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>实时对话系统</title>
+    <title>实时对话系统 - DATA HAMMER GROUP</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         body {
             font-family: 'Microsoft YaHei', sans-serif;
-            background-color: #f5f5f5;
             margin: 0;
-            padding: 20px;
-            color: #333;
         }
 
-        h2 {
+        body.main-bg {
+            background: radial-gradient(circle at top, #05070a 0%, #050608 35%, #000000 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部导航条（与首页风格统一） */
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 32px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            background: linear-gradient(
+                90deg,
+                rgba(0, 229, 255, 0.18),
+                rgba(0, 0, 0, 0.6),
+                rgba(0, 229, 255, 0.08)
+            );
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-logo-mark {
+            width: 26px;
+            height: 26px;
+            border-radius: 10px;
+            background: conic-gradient(from 200deg, #00e5ff, #0072ff, #00ffbf, #00e5ff);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.8);
+            position: relative;
+        }
+
+        .nav-logo-mark::after {
+            content: "";
+            position: absolute;
+            inset: 4px;
+            border-radius: 8px;
+            background: radial-gradient(circle at 30% 20%, #0b1b26, #020509);
+        }
+
+        .nav-logo-text-main {
+            font-size: 1.05rem;
+            letter-spacing: 0.12em;
+        }
+
+        .nav-logo-text-sub {
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 22px;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.75);
+            text-decoration: none;
+            position: relative;
+            padding-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 2px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #00e5ff, #00ffbf);
+            transition: width 0.25s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            padding: 8px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 229, 255, 0.5);
+            background: radial-gradient(circle at 0 0, rgba(0, 229, 255, 0.35), transparent);
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #e6faff;
+            transition: all 0.25s ease;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
+            background: radial-gradient(circle at 100% 0, rgba(0, 229, 255, 0.5), transparent);
+        }
+
+        @media (max-width: 960px) {
+            .nav {
+                padding: 10px 16px;
+            }
+        }
+
+        /* 页面主体：居中布局 */
+        .page-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 24px 16px 24px;
+        }
+
+        .page-inner {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin: 0 auto;
+        }
+
+        /* 标题区域 */
+        .page-header {
             text-align: center;
-            color: #2c3e50;
-            margin-bottom: 30px;
         }
 
+        .page-title {
+            font-size: 1.7rem;
+            letter-spacing: 0.1em;
+            margin: 4px 0 6px;
+        }
+
+        .page-subtitle {
+            font-size: 0.9rem;
+            color: rgba(220, 235, 255, 0.75);
+        }
+
+        /* 主容器：左右两列，玻璃拟态科技风 */
         .video-page-container {
             display: flex;
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            gap: 18px;
+            background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.18), transparent 55%),
+                        rgba(255, 255, 255, 0.03);
+            border-radius: 18px;
+            padding: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow:
+                0 0 30px rgba(0, 229, 255, 0.18),
+                0 0 90px rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(14px);
+        }
+
+        @media (max-width: 900px) {
+            .video-page-container {
+                flex-direction: column;
+            }
         }
 
         .video-display {
             flex: 1;
-            padding: 20px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            gap: 16px;
         }
 
         .video-display video {
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
+            max-width: 100%;
         }
 
+        /* 右侧参数区卡片 */
         .form-section {
             flex: 1;
-            padding: 20px;
-            background: #f9f9f9;
-            border-left: 1px solid #eee;
+            padding: 16px 18px;
+            background: rgba(5, 10, 20, 0.92);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: rgba(230, 243, 255, 0.9);
+            font-size: 0.9rem;
         }
 
-        select, input {
+        select,
+        input {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
+            padding: 9px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            font-size: 0.9rem;
             box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.35);
+            color: #eaf6ff;
+            outline: none;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: #00e5ff;
+            box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.4);
         }
 
         .generate-btn {
             width: 100%;
-            padding: 12px;
-            background-color: #3498db;
+            padding: 11px;
+            background: linear-gradient(120deg, #00c6ff, #0072ff);
             color: white;
             border: none;
-            border-radius: 4px;
-            font-size: 16px;
+            border-radius: 999px;
+            font-size: 0.98rem;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            margin-top: 8px;
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.35);
         }
 
         .generate-btn:hover {
-            background-color: #2980b9;
+            background: linear-gradient(120deg, #0072ff, #00e5ff);
+            transform: translateY(-1px);
+            box-shadow: 0 0 24px rgba(0, 229, 255, 0.55);
         }
 
+        /* 语音录制器卡片 */
         .voice-recorder {
-            margin-top: 20px;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            padding: 16px 16px 14px;
+            background: rgba(5, 10, 20, 0.92);
+            border-radius: 14px;
+            box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             text-align: center;
         }
 
         .recorder-title {
-            font-size: 18px;
-            margin-bottom: 15px;
-            color: #2c3e50;
+            font-size: 0.98rem;
+            margin-bottom: 10px;
+            color: rgba(230, 243, 255, 0.95);
         }
 
         .record-btn {
-            padding: 12px 24px;
-            background-color: #e74c3c;
+            padding: 10px 22px;
+            background: linear-gradient(120deg, #ff4d4d, #ff784e);
             color: white;
             border: none;
-            border-radius: 50px;
-            font-size: 16px;
+            border-radius: 999px;
+            font-size: 0.95rem;
             cursor: pointer;
             transition: all 0.3s;
-            margin-bottom: 15px;
-            display: flex;
+            margin-bottom: 10px;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            margin: 0 auto 15px;
+        }
+
+        .record-btn span {
+            font-size: 1.1rem;
         }
 
         .record-btn:hover {
-            background-color: #c0392b;
-            transform: scale(1.05);
+            background: linear-gradient(120deg, #ff784e, #ff4d4d);
+            transform: scale(1.03);
+            box-shadow: 0 0 18px rgba(255, 120, 78, 0.6);
         }
 
         .record-btn.recording {
-            background-color: #2ecc71;
+            background: linear-gradient(120deg, #2ecc71, #1abc9c);
             animation: pulse 1.5s infinite;
         }
 
         .record-btn.recording:hover {
-            background-color: #27ae60;
+            background: linear-gradient(120deg, #1abc9c, #2ecc71);
         }
 
         @keyframes pulse {
             0% {
                 box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
             }
+
             70% {
-                box-shadow: 0 0 0 10px rgba(46, 204, 113, 0);
+                box-shadow: 0 0 0 12px rgba(46, 204, 113, 0);
             }
+
             100% {
                 box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
             }
         }
 
         .timer {
-            font-size: 24px;
+            font-size: 1.3rem;
             font-weight: bold;
-            color: #2c3e50;
-            margin: 15px 0;
+            color: #eaf6ff;
+            margin: 10px 0 6px;
         }
 
         .recording-indicator {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            margin: 10px 0;
+            gap: 8px;
+            margin: 4px 0 6px;
+            font-size: 0.88rem;
+            color: rgba(255, 230, 230, 0.9);
         }
 
         .recording-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             background-color: #e74c3c;
             border-radius: 50%;
             animation: blink 1.5s infinite;
         }
 
         @keyframes blink {
-            0%, 50% {
+            0%,
+            50% {
                 opacity: 1;
             }
-            51%, 100% {
+
+            51%,
+            100% {
                 opacity: 0;
             }
         }
 
         .status-message {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #7f8c8d;
+            margin-top: 4px;
+            font-size: 0.8rem;
+            color: rgba(190, 205, 220, 0.9);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 8px 0 14px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.35);
         }
     </style>
 </head>
 
-<body class="subpage-bg">
-    <h2>实时对话系统</h2>
-    <div class="video-page-container">
-        <div class="video-display">
-            <!-- 语音录制器 -->
-            <div class="voice-recorder">
-                <button id="recordButton" class="record-btn">
-                    <span>●</span> 开始录音
-                </button>
-                <div class="timer" id="timer">00:00</div>
-                <div class="recording-indicator" id="recordingIndicator" style="display: none;">
-                    <div class="recording-dot"></div>
-                    <span>正在录音...</span>
-                </div>
-                <div class="status-message" id="statusMessage">准备录音</div>
+<body class="main-bg">
+    <!-- 顶部导航：右侧按钮为“返回首页” -->
+    <header class="nav">
+        <div class="nav-logo">
+            <div class="nav-logo-mark"></div>
+            <div>
+                <div class="nav-logo-text-main">DATA HAMMER GROUP</div>
+                <div class="nav-logo-text-sub">Intelligent Talking System</div>
             </div>
-            <!-- 左侧视频显示 -->
-            <video id="chatVideo" controls width="420">
-                <source src="{{ url_for('static', filename='videos/sample.mp4') }}" type="video/mp4">
-            </video>
         </div>
+        <nav class="nav-links">
+            <a href="/">首页</a>
+            <a href="/chat_system">人机对话</a>
+            <a href="/model_training">模型训练</a>
+            <a href="/video_generation">视频生成</a>
+            <a href="/about">关于我们</a>
+        </nav>
+        <button class="nav-cta" onclick="window.location.href='/'">
+            返回首页
+        </button>
+    </header>
 
-        <!-- 右侧参数区 -->
-        <div class="form-section">
-            <form id="chatForm">
-                <div class="form-group">
-                    <label>模型名称</label>
-                    <select name="model_name">
-                        <option value="model1">Model 1</option>
-                        <option value="model2">Model 2</option>
-                        <option value="SyncTalk">SyncTalk</option>
-                    </select>
+    <!-- 页面内容 -->
+    <main class="page-wrapper">
+        <div class="page-inner">
+            <section class="page-header">
+                <h2 class="page-title">实时对话系统</h2>
+                <p class="page-subtitle">通过语音驱动的人机对话与视频回复体验</p>
+            </section>
+
+            <div class="video-page-container">
+                <!-- 左侧：录音 + 视频 -->
+                <div class="video-display">
+                    <div class="voice-recorder">
+                        <div class="recorder-title">语音输入 · 实时采集</div>
+                        <button id="recordButton" class="record-btn">
+                            <span>●</span> 开始录音
+                        </button>
+                        <div class="timer" id="timer">00:00</div>
+                        <div class="recording-indicator" id="recordingIndicator" style="display: none;">
+                            <div class="recording-dot"></div>
+                            <span>正在录音...</span>
+                        </div>
+                        <div class="status-message" id="statusMessage">准备录音</div>
+                    </div>
+
+                    <video id="chatVideo" controls width="420">
+                        <source src="{{ url_for('static', filename='videos/sample.mp4') }}" type="video/mp4">
+                    </video>
                 </div>
 
-                <div class="form-group">
-                    <label>模型目录地址</label>
-                    <input type="text" name="model_param" placeholder="请输入模型目录路径">
-                </div>
+                <!-- 右侧：参数表单 -->
+                <div class="form-section">
+                    <form id="chatForm">
+                        <div class="form-group">
+                            <label>模型名称</label>
+                            <select name="model_name">
+                                <option value="model1">Model 1</option>
+                                <option value="model2">Model 2</option>
+                                <option value="SyncTalk">SyncTalk</option>
+                            </select>
+                        </div>
 
-                <div class="form-group">
-                    <label>语音克隆模型名称</label>
-                    <select name="voice_clone">
-                        <option value="cloneA">Voice Clone A</option>
-                        <option value="cloneB">Voice Clone B</option>
-                    </select>
-                </div>
+                        <div class="form-group">
+                            <label>模型目录地址</label>
+                            <input type="text" name="model_param" placeholder="请输入模型目录路径">
+                        </div>
 
-                <div class="form-group">
-                    <label>对话API选择</label>
-                    <select name="api_choice">
-                        <option value="openai">OpenAI API</option>
-                        <option value="azure">Azure Speech API</option>
-                    </select>
-                </div>
+                        <div class="form-group">
+                            <label>语音克隆模型名称</label>
+                            <select name="voice_clone">
+                                <option value="cloneA">Voice Clone A</option>
+                                <option value="cloneB">Voice Clone B</option>
+                            </select>
+                        </div>
 
-                <button type="submit" class="generate-btn">🎤 开始对话</button>
-            </form>
+                        <div class="form-group">
+                            <label>对话 API 选择</label>
+                            <select name="api_choice">
+                                <option value="openai">OpenAI API</option>
+                                <option value="azure">Azure Speech API</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="generate-btn">🎤 开始对话</button>
+                    </form>
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
+
+    <footer class="footer">
+        © 2025 DATA HAMMER LAB · All Rights Reserved
+    </footer>
 
     <script>
         // 语音录制功能

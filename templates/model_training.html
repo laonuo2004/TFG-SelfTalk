@@ -3,59 +3,356 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>模型训练界面</title>
+    <title>模型训练界面 - DATA HAMMER GROUP</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0;
+        }
+
+        body.main-bg {
+            background: radial-gradient(circle at top, #05070a 0%, #050608 35%, #000000 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部导航条（与首页 / 实时对话统一） */
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 32px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            background: linear-gradient(
+                90deg,
+                rgba(0, 229, 255, 0.18),
+                rgba(0, 0, 0, 0.6),
+                rgba(0, 229, 255, 0.08)
+            );
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-logo-mark {
+            width: 26px;
+            height: 26px;
+            border-radius: 10px;
+            background: conic-gradient(from 200deg, #00e5ff, #0072ff, #00ffbf, #00e5ff);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.8);
+            position: relative;
+        }
+
+        .nav-logo-mark::after {
+            content: "";
+            position: absolute;
+            inset: 4px;
+            border-radius: 8px;
+            background: radial-gradient(circle at 30% 20%, #0b1b26, #020509);
+        }
+
+        .nav-logo-text-main {
+            font-size: 1.05rem;
+            letter-spacing: 0.12em;
+        }
+
+        .nav-logo-text-sub {
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 22px;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.75);
+            text-decoration: none;
+            position: relative;
+            padding-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 2px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #00e5ff, #00ffbf);
+            transition: width 0.25s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            padding: 8px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 229, 255, 0.5);
+            background: radial-gradient(circle at 0 0, rgba(0, 229, 255, 0.35), transparent);
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #e6faff;
+            transition: all 0.25s ease;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
+            background: radial-gradient(circle at 100% 0, rgba(0, 229, 255, 0.5), transparent);
+        }
+
+        @media (max-width: 960px) {
+            .nav {
+                padding: 10px 16px;
+            }
+        }
+
+        /* 页面主体 */
+        .page-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 24px 16px 24px;
+        }
+
+        .page-inner {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin: 0 auto;
+        }
+
+        /* 标题区域 */
+        .page-header {
+            text-align: center;
+        }
+
+        .page-title {
+            font-size: 1.7rem;
+            letter-spacing: 0.1em;
+            margin: 4px 0 6px;
+        }
+
+        .page-subtitle {
+            font-size: 0.9rem;
+            color: rgba(220, 235, 255, 0.75);
+        }
+
+        /* 主容器：左右两列玻璃拟态卡片 */
+        .video-page-container {
+            display: flex;
+            gap: 18px;
+            background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.18), transparent 55%),
+                        rgba(255, 255, 255, 0.03);
+            border-radius: 18px;
+            padding: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow:
+                0 0 30px rgba(0, 229, 255, 0.18),
+                0 0 90px rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(14px);
+        }
+
+        @media (max-width: 900px) {
+            .video-page-container {
+                flex-direction: column;
+            }
+        }
+
+        .video-display {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-display video {
+            border-radius: 10px;
+            box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
+            max-width: 100%;
+        }
+
+        /* 右侧表单卡片 */
+        .form-section {
+            flex: 1;
+            padding: 16px 18px;
+            background: rgba(5, 10, 20, 0.92);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: rgba(230, 243, 255, 0.9);
+            font-size: 0.9rem;
+        }
+
+        select,
+        input,
+        textarea {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.35);
+            color: #eaf6ff;
+            outline: none;
+            resize: vertical;
+        }
+
+        select:focus,
+        input:focus,
+        textarea:focus {
+            border-color: #00e5ff;
+            box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.4);
+        }
+
+        textarea {
+            min-height: 80px;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 11px;
+            background: linear-gradient(120deg, #00c6ff, #0072ff);
+            color: white;
+            border: none;
+            border-radius: 999px;
+            font-size: 0.98rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.35);
+        }
+
+        .generate-btn:hover {
+            background: linear-gradient(120deg, #0072ff, #00e5ff);
+            transform: translateY(-1px);
+            box-shadow: 0 0 24px rgba(0, 229, 255, 0.55);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 8px 0 14px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.35);
+        }
+    </style>
 </head>
 
-<body class="subpage-bg">
-    <h2>模型训练界面</h2>
-    <div class="video-page-container">
-        <!-- 左侧：训练结果视频 -->
-        <div class="video-display">
-            <video id="trainVideo" controls width="420">
-                <source src="{{ url_for('static', filename='videos/sample.mp4') }}" type="video/mp4">
-            </video>
+<body class="main-bg">
+    <!-- 顶部导航 -->
+    <header class="nav">
+        <div class="nav-logo">
+            <div class="nav-logo-mark"></div>
+            <div>
+                <div class="nav-logo-text-main">DATA HAMMER GROUP</div>
+                <div class="nav-logo-text-sub">Intelligent Talking System</div>
+            </div>
         </div>
+        <nav class="nav-links">
+            <a href="/">首页</a>
+            <a href="/chat_system">人机对话</a>
+            <a href="/model_training">模型训练</a>
+            <a href="/video_generation">视频生成</a>
+            <a href="/about">关于我们</a>
+        </nav>
+        <button class="nav-cta" onclick="window.location.href='/'">
+            返回首页
+        </button>
+    </header>
 
-        <!-- 右侧：输入框 -->
-        <div class="form-section">
-            <form id="trainForm">
-                <div class="form-group">
-                    <label>模型选择</label>
-                    <select name="model_choice">
-                        <option value="modelA">Model A</option>
-                        <option value="modelB">Model B</option>
-                        <option value="SyncTalk">SyncTalk</option>
-                    </select>
+    <!-- 页面内容 -->
+    <main class="page-wrapper">
+        <div class="page-inner">
+            <section class="page-header">
+                <h2 class="page-title">模型训练界面</h2>
+                <p class="page-subtitle">配置参数 · 载入参考素材 · 启动 SyncTalk 模型训练流程</p>
+            </section>
+
+            <div class="video-page-container">
+                <!-- 左侧：训练结果 / 参考视频显示 -->
+                <div class="video-display">
+                    <video id="trainVideo" controls width="420">
+                        <source src="{{ url_for('static', filename='videos/sample.mp4') }}" type="video/mp4">
+                    </video>
                 </div>
 
-                <div class="form-group">
-                    <label>参考视频/图像地址</label>
-                    <input type="text" name="ref_video" placeholder="请输入参考视频或图像的相对路径">
-                </div>
+                <!-- 右侧：训练参数表单 -->
+                <div class="form-section">
+                    <form id="trainForm">
+                        <div class="form-group">
+                            <label>模型选择</label>
+                            <select name="model_choice">
+                                <option value="modelA">Model A</option>
+                                <option value="modelB">Model B</option>
+                                <option value="SyncTalk">SyncTalk</option>
+                            </select>
+                        </div>
 
-                <div class="form-group">
-                    <label>GPU选择</label>
-                    <select name="gpu_choice">
-                        <option value="GPU0">GPU 0</option>
-                        <option value="GPU1">GPU 1</option>
-                    </select>
-                </div>
+                        <div class="form-group">
+                            <label>参考视频 / 图像地址</label>
+                            <input type="text" name="ref_video" placeholder="请输入参考视频或图像的相对路径">
+                        </div>
 
-                <div class="form-group">
-                    <label>Epoch（训练轮数）</label>
-                    <input type="number" name="epoch" min="1" value="10">
-                </div>
+                        <div class="form-group">
+                            <label>GPU 选择</label>
+                            <select name="gpu_choice">
+                                <option value="GPU0">GPU 0</option>
+                                <option value="GPU1">GPU 1</option>
+                            </select>
+                        </div>
 
-                <div class="form-group">
-                    <label>自定义训练参数</label>
-                    <textarea name="custom_params" placeholder="请输入自定义参数..."></textarea>
-                </div>
+                        <div class="form-group">
+                            <label>Epoch（训练轮数）</label>
+                            <input type="number" name="epoch" min="1" value="10">
+                        </div>
 
-                <button type="submit" class="generate-btn">Training!</button>
-            </form>
+                        <div class="form-group">
+                            <label>自定义训练参数</label>
+                            <textarea name="custom_params" placeholder="请输入自定义参数..."></textarea>
+                        </div>
+
+                        <button type="submit" class="generate-btn">🚀 开始训练</button>
+                    </form>
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
+
+    <footer class="footer">
+        © 2025 DATA HAMMER LAB · All Rights Reserved
+    </footer>
 
     <script>
         document.getElementById('trainForm').addEventListener('submit', function (e) {

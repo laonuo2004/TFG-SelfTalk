@@ -14,8 +14,10 @@ GPT-SoVITS/
 test_data/
 
 docs/AI/
-SelfTalk/vocaset/*
-!SelfTalk/vocaset/output/
+
+# AutoDL
+
+**/.ipynb_checkpoints/
 
 # other
 .specstory/

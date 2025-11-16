@@ -6,94 +6,384 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         body.main-bg {
-            background: radial-gradient(circle at center, #0a0a0a 0%, #1b1b1b 100%);
+            background: radial-gradient(circle at top, #05070a 0%, #050608 35%, #000000 100%);
             color: #fff;
             font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
-            overflow: hidden;
-        }
-
-        .container {
-            text-align: center;
-            padding: 40px 60px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            box-shadow: 0 0 40px rgba(0, 200, 255, 0.2);
-            backdrop-filter: blur(10px);
-            animation: fadeIn 1.2s ease;
-        }
-
-        h1 {
-            font-size: 2.2rem;
-            letter-spacing: 2px;
-            color: #00e5ff;
-            margin-bottom: 40px;
-            text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
-            animation: glowText 3s infinite alternate;
-        }
-
-        .button-container {
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 20px;
         }
 
-        .button-container button {
-            background: linear-gradient(90deg, #00c6ff, #0072ff);
+        /* 顶部导航条 */
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 32px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            background: linear-gradient(
+                90deg,
+                rgba(0, 229, 255, 0.18),
+                rgba(0, 0, 0, 0.6),
+                rgba(0, 229, 255, 0.08)
+            );
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-logo-mark {
+            width: 26px;
+            height: 26px;
+            border-radius: 10px;
+            background: conic-gradient(from 200deg, #00e5ff, #0072ff, #00ffbf, #00e5ff);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.8);
+            position: relative;
+        }
+
+        .nav-logo-mark::after {
+            content: "";
+            position: absolute;
+            inset: 4px;
+            border-radius: 8px;
+            background: radial-gradient(circle at 30% 20%, #0b1b26, #020509);
+        }
+
+        .nav-logo-text-main {
+            font-size: 1.05rem;
+            letter-spacing: 0.12em;
+        }
+
+        .nav-logo-text-sub {
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 22px;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.75);
+            text-decoration: none;
+            position: relative;
+            padding-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 2px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #00e5ff, #00ffbf);
+            transition: width 0.25s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            padding: 8px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 229, 255, 0.5);
+            background: radial-gradient(circle at 0 0, rgba(0, 229, 255, 0.35), transparent);
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #e6faff;
+            transition: all 0.25s ease;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
+            background: radial-gradient(circle at 100% 0, rgba(0, 229, 255, 0.5), transparent);
+        }
+
+        /* 页面主体：纵向布局，整体内容居中 */
+        .page-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 24px 16px 24px;
+        }
+
+        .page-inner {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            text-align: center;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 960px) {
+            .nav {
+                padding: 10px 16px;
+            }
+            .page-wrapper {
+                padding: 20px 12px 20px;
+            }
+        }
+
+        /* 顶部主卡片：标题 + 简介 + 4 个按钮 */
+        .hero-card {
+            background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.18), transparent 55%),
+                        rgba(255, 255, 255, 0.02);
+            border-radius: 18px;
+            padding: 22px 20px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow:
+                0 0 30px rgba(0, 229, 255, 0.18),
+                0 0 90px rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .hero-card::before {
+            content: "DATA • HAMMER • TALKING • SYSTEM";
+            position: absolute;
+            top: 10px;
+            right: -40px;
+            font-size: 0.65rem;
+            letter-spacing: 0.35em;
+            color: rgba(255, 255, 255, 0.08);
+            transform: rotate(-6deg);
+            white-space: nowrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(0, 229, 255, 0.5);
+            font-size: 0.75rem;
+            color: #cfefff;
+            margin-bottom: 14px;
+        }
+
+        .badge-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: radial-gradient(circle, #00ffbf, #00e5ff);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.9);
+        }
+
+        .headline {
+            font-size: 1.8rem;
+            margin: 0 0 10px;
+            letter-spacing: 0.08em;
+        }
+
+        .headline span {
+            color: #00e5ff;
+        }
+
+        .subline {
+            font-size: 0.92rem;
+            color: rgba(226, 244, 255, 0.85);
+            max-width: 520px;
+            line-height: 1.7;
+            margin: 0 auto 18px;
+        }
+
+        /* 4 个主按钮 */
+        .hero-actions {
+            display: grid;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+            gap: 14px;
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        .hero-actions button {
+            background: linear-gradient(120deg, #00c6ff, #0072ff);
             border: none;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: bold;
-            padding: 14px 0;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 12px 0;
             border-radius: 12px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.3);
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
-        .button-container button:hover {
-            transform: scale(1.05);
-            background: linear-gradient(90deg, #0072ff, #00c6ff);
-            box-shadow: 0 0 25px rgba(0, 229, 255, 0.6);
+        .hero-actions button span.label-sub {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            font-weight: 400;
         }
 
-        .button-container button:active {
-            transform: scale(0.98);
+        .hero-actions button:hover {
+            transform: translateY(-1px) scale(1.02);
+            background: linear-gradient(120deg, #0072ff, #00e5ff);
+            box-shadow: 0 0 26px rgba(0, 229, 255, 0.55);
         }
 
-        @keyframes glowText {
-            from { text-shadow: 0 0 10px #00e5ff; }
-            to { text-shadow: 0 0 25px #00ffff, 0 0 50px #00ffff; }
+        .hero-actions button:active {
+            transform: translateY(0) scale(0.99);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* 底部：合作与联系 —— 尺寸风格与 hero-card 保持一致 */
+        .contact-card {
+            background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.12), transparent 60%),
+                        rgba(10, 15, 26, 0.95);
+            border-radius: 18px;
+            padding: 22px 20px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow:
+                0 0 30px rgba(0, 229, 255, 0.18),
+                0 0 90px rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            margin: 0 auto;
+            width: 100%;
         }
 
-        /* 可选底部标识 */
+        .contact-title {
+            font-size: 1rem;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            align-items: baseline;
+        }
+
+        .contact-title span {
+            font-size: 0.8rem;
+            color: rgba(177, 205, 230, 0.8);
+        }
+
+        .contact-list {
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: rgba(212, 231, 252, 0.9);
+            margin-top: 4px;
+        }
+
+        .contact-list strong {
+            color: #ffffff;
+            margin-right: 6px;
+        }
+
         .footer {
-            position: absolute;
-            bottom: 15px;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            padding: 8px 0 14px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.35);
         }
     </style>
 </head>
 <body class="main-bg">
-    <div class="container">
-        <h1>DATA HAMMER GROUP<br>TALKING SYSTEM</h1>
-        <div class="button-container">
-            <button onclick="window.location.href='/model_training'">训练模型</button>
-            <button onclick="window.location.href='/video_generation'">视频生成</button>
-            <button onclick="window.location.href='/chat_system'">人机对话</button>
+
+    <!-- 顶部导航 -->
+    <header class="nav">
+        <div class="nav-logo">
+            <div class="nav-logo-mark"></div>
+            <div>
+                <div class="nav-logo-text-main">DATA HAMMER GROUP</div>
+                <div class="nav-logo-text-sub">Intelligent Talking System</div>
+            </div>
         </div>
-    </div>
-    <div class="footer">© 2025 DATA HAMMER LAB</div>
+        <nav class="nav-links">
+            <a href="/">首页</a>
+            <a href="/chat_system">人机对话</a>
+            <a href="/model_training">模型训练</a>
+            <a href="/video_generation">视频生成</a>
+            <a href="/about">关于我们</a>
+        </nav>
+        <button class="nav-cta" onclick="window.location.href='/chat_system'">
+            立即体验对话
+        </button>
+    </header>
+
+    <!-- 页面内容 -->
+    <main class="page-wrapper">
+        <div class="page-inner">
+            <!-- 顶部：主内容 + 4 个按钮 -->
+            <section class="hero-card">
+                <div class="badge">
+                    <span class="badge-dot"></span>
+                    DATA HAMMER TALKING SYSTEM · 智能语音交互平台
+                </div>
+
+                <h1 class="headline">
+                    DATA HAMMER <span>GROUP</span><br>
+                    TALKING SYSTEM
+                </h1>
+
+                <p class="subline">
+                    面向企业与开发者的语音智能基础设施，集成模型训练、语音对话与视频生成能力，
+                    帮助你快速搭建稳定、自然、可扩展的人机交互系统。
+                </p>
+
+                <div class="hero-actions">
+                    <button onclick="window.location.href='/model_training'">
+                        训练模型
+                        <span class="label-sub">Model Training</span>
+                    </button>
+                    <button onclick="window.location.href='/video_generation'">
+                        视频生成
+                        <span class="label-sub">Video Generation</span>
+                    </button>
+                    <button onclick="window.location.href='/chat_system'">
+                        人机对话
+                        <span class="label-sub">Chat System</span>
+                    </button>
+                    <button onclick="window.location.href='/about'">
+                        关于我们
+                        <span class="label-sub">About Us</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 底部：合作与联系 -->
+            <section class="contact-card">
+                <div class="contact-title">
+                    合作与联系
+                    <span>Contact</span>
+                </div>
+                <div class="contact-list">
+                    <div><strong>商务合作</strong> bd@datahammer.example</div>
+                    <div><strong>技术支持</strong> support@datahammer.example</div>
+                    <div><strong>Git / Demo</strong> 可根据需求开放 PoC 访问与技术文档</div>
+                    <div><strong>合作模式</strong> 项目共建 · 私有化交付 · API 使用授权</div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        © 2025 DATA HAMMER LAB · All Rights Reserved
+    </footer>
+
 </body>
 </html>

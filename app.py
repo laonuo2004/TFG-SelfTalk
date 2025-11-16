@@ -13,6 +13,20 @@ def model_training():
     video_path = None
     if request.method == 'POST':
         # TODO: 后端同学在这里接“训练模型”的逻辑
+        data = {
+            'model_choice': request.form.get('model_choice'),
+            'dataset': request.form.get('dataset'),
+            'train_subjects': request.form.get('train_subjects'),
+            'val_subjects': request.form.get('val_subjects'),
+            'epochs': request.form.get('epochs'),
+            'gpu_choice': request.form.get('gpu_choice'),
+        }
+        
+        from backend.model_trainer import train_model
+        result = train_model(data)
+
+        return render_template('model_training.html', result=result)
+    
         # 前端现在只需要有个占位视频路径，方便调试界面
         video_path = '/static/videos/sample.mp4'
     return render_template('model_training.html', video_path=video_path)
