@@ -142,7 +142,53 @@ def _train_synctalk_pipeline(payload: TrainingPayload) -> Dict[str, Any]:
         可以直接照抄之前的 Synctalk 训练逻辑
     """
     # TODO: 实现完整逻辑
-    raise NotImplementedError("SyncTalk 训练流程待实现")
+
+    print("[SyncTalk] 收到训练请求")
+    video_path = payload.ref_video
+    if not video_path:
+        return {
+            "status": "failed",
+            "message": "SyncTalk 训练必须提供 ref_video"
+        }
+
+    print(f"[SyncTalk] 输入视频：{video_path}")
+
+    cmd = [
+        "./SyncTalk/run_synctalk.sh",
+        "train",
+        "--video_path", payload.ref_video,
+        "--gpu", payload.gpu_choice,
+        "--epochs", str(payload.epochs),
+    ]
+
+    print(f"[SyncTalk] 执行命令: {' '.join(cmd)}")
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        print("[SyncTalk] 训练输出:\n", result.stdout)
+        if result.stderr:
+            print("[SyncTalk] 错误输出:\n", result.stderr)
+
+        return {
+            "status": "success",
+            "message": "SyncTalk 模型训练完成",
+            "artifacts": {
+                "video_path": video_path,
+            }
+        }
+
+    except Exception as e:
+        return {
+            "status": "failed",
+            "message": str(e),
+        }
+    # raise NotImplementedError("SyncTalk 训练流程待实现")
 
 
 def _train_selftalk_pipeline(payload: TrainingPayload) -> Dict[str, Any]:
@@ -168,4 +214,79 @@ def _train_selftalk_pipeline(payload: TrainingPayload) -> Dict[str, Any]:
     # TODO: 调用真正的 SelfTalk 训练模块
     # result = run_selftalk_training(payload)
     # return result
-    raise NotImplementedError("SelfTalk 训练流程待实现")
+    """
+    SelfTalk 训练流程（完整实现组长的 TODO 全部 4 步）
+    """
+    print("[SelfTalk] 准备进行训练...")
+
+    args = {
+        "dataset": payload.dataset,
+        "train_subjects": payload.train_subjects,
+        "val_subjects": payload.val_subjects,
+        "epochs": payload.epochs,
+        "gpu": payload.gpu_choice
+    }
+
+    print("[SelfTalk] 参数：", args)
+
+    dataset_root = f"vocaset/{payload.train_subjects}"
+    required_files = [
+        f"{dataset_root}/wav",
+        f"{dataset_root}/vertices_npy",
+        f"{dataset_root}/templates.pkl",
+    ]
+
+    for p in required_files:
+        if not os.path.exists(p):
+            return {
+                "status": "failed",
+                "message": f"数据缺失，请检查：{p}"
+            }
+
+    print("[SelfTalk] 数据集检查完成")
+
+    try:
+        # 调用 backend/selftalk_trainer.py 的 run_selftalk_training()
+        from backend.selftalk_trainer import run_selftalk_training
+
+        training_output = run_selftalk_training(
+            dataset=args["dataset"],
+            train_subjects=args["train_subjects"],
+            val_subjects=args["val_subjects"],
+            epochs=args["epochs"],
+            device=args["gpu"]
+        )
+
+    except Exception as e:
+        print("[SelfTalk] 训练异常：", e)
+        return {
+            "status": "failed",
+            "message": f"SelfTalk 训练失败：{e}",
+        }
+
+    save_dir = "vocaset/save"
+    if not os.path.exists(save_dir):
+        return {
+            "status": "failed",
+            "message": f"没有找到模型输出目录：{save_dir}"
+        }
+
+    # 按修改时间排序，拿最后一个
+    checkpoints = sorted(
+        [os.path.join(save_dir, d) for d in os.listdir(save_dir)],
+        key=lambda x: os.path.getmtime(x)
+    )
+
+    latest_model = checkpoints[-1] if checkpoints else None
+
+    print("[SelfTalk] 最新模型目录：", latest_model)
+
+    return {
+        "status": "success",
+        "message": "SelfTalk 模型训练完成",
+        "artifacts": {
+            "checkpoint": latest_model,
+            "raw_output": training_output
+        }
+    }
+    # raise NotImplementedError("SelfTalk 训练流程待实现")

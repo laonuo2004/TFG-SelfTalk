@@ -13,6 +13,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict
 
+import subprocess
+import datetime
+import os
+
 
 @dataclass
 class SelfTalkTrainConfig:
@@ -55,11 +59,29 @@ def run_selftalk_training(payload) -> Dict[str, Any]:
         5. 解析输出目录（vocaset/save/...）
         6. 返回 {status, message, artifacts}
     """
+    try:
+        config = _build_config(payload)
+        _ensure_dataset_ready(config)
+        _launch_training_process(config)
+        artifacts = _collect_training_artifacts(config)
+
+        return {
+            "status": "success",
+            "message": "SelfTalk 模型训练完成",
+            "artifacts": artifacts
+        }
+
+    except Exception as e:
+        return {
+            "status": "failed",
+            "message": str(e),
+            "artifacts": {}
+        }
     # config = _build_config(payload)
     # _ensure_dataset_ready(config)
     # _launch_training_process(config)
     # return _collect_training_artifacts(config)
-    raise NotImplementedError("SelfTalk 训练核心逻辑待实现")
+    # raise NotImplementedError("SelfTalk 训练核心逻辑待实现")
 
 
 def _build_config(payload) -> SelfTalkTrainConfig:
@@ -75,7 +97,39 @@ def _build_config(payload) -> SelfTalkTrainConfig:
     # TODO:
     #   - 支持 vocaset / BIWI 不同的 vertice_dim / feature_dim
     #   - 从 payload.extra 中读取自定义参数
-    raise NotImplementedError
+
+    ROOT = Path("/root/autodl-tmp/TFG-SelfTalk/SelfTalk")
+    DATA_ROOT = ROOT / payload.dataset
+
+    # 构造 save 目录
+    save_root = DATA_ROOT / "save"
+    save_root.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    save_dir = save_root / f"selftalk_{timestamp}"
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    # 训练主体目录
+    subject = payload.train_subjects
+
+    return SelfTalkTrainConfig(
+        dataset=payload.dataset,
+        save_dir=save_dir,
+
+        wav_dir=DATA_ROOT / subject / "wav",
+        vertices_dir=DATA_ROOT / subject / "vertices_npy",
+        template_file=DATA_ROOT / subject / "templates.pkl",
+
+        max_epoch=payload.epochs,
+        gpu=payload.gpu_choice,
+        train_subjects=payload.train_subjects,
+        val_subjects=payload.val_subjects,
+        test_subjects=payload.test_subjects or "",
+
+        main_py=ROOT / "main.py",
+        root=ROOT
+    )
+    # raise NotImplementedError
 
 
 def _ensure_dataset_ready(config: SelfTalkTrainConfig) -> None:
@@ -88,7 +142,16 @@ def _ensure_dataset_ready(config: SelfTalkTrainConfig) -> None:
     # TODO:
     #   - 检查 Path 是否存在
     #   - 提示缺失文件/目录
-    raise NotImplementedError
+    required_paths = [
+        config.wav_dir,
+        config.vertices_dir,
+        config.template_file,
+    ]
+
+    for p in required_paths:
+        if not p.exists():
+            raise FileNotFoundError(f"缺失文件或目录：{p}")
+    # raise NotImplementedError
 
 
 def _launch_training_process(config: SelfTalkTrainConfig) -> None:
@@ -102,7 +165,27 @@ def _launch_training_process(config: SelfTalkTrainConfig) -> None:
     #   - 构造命令行数组
     #   - 监听 stdout/stderr
     #   - 对接任务管理器（可选）
-    raise NotImplementedError
+    cmd = [
+        "python", str(config.main_py),
+        "--dataset", config.dataset,
+        "--train_subjects", config.train_subjects,
+        "--val_subjects", config.val_subjects,
+        "--max_epoch", str(config.max_epoch),
+        "--save_path", str(config.save_dir),
+        "--device", config.gpu,
+    ]
+
+    print("\n[SelfTalk] 执行命令：")
+    print(" ".join(cmd))
+    print("--------------------------------------------------\n")
+
+    process = subprocess.Popen(
+        cmd,
+        cwd=str(config.root),
+    )
+
+    process.wait()
+    # raise NotImplementedError
 
 
 def _collect_training_artifacts(config: SelfTalkTrainConfig) -> Dict[str, Any]:
@@ -116,5 +199,7 @@ def _collect_training_artifacts(config: SelfTalkTrainConfig) -> Dict[str, Any]:
         Dict[str, Any]: 包含模型路径、日志路径等。
     """
     # TODO: 扫描 save_dir 内的最新模型、loss 曲线等
-    raise NotImplementedError
-
+    return {
+        "model_dir": str(config.save_dir),
+    }
+    # raise NotImplementedError
