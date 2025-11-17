@@ -34,6 +34,8 @@ class SelfTalkTrainConfig:
     train_subjects: str
     val_subjects: str
     test_subjects: str
+    main_py: Path    # 新增
+    root: Path       # 新增
 
 
 def run_selftalk_training(payload) -> Dict[str, Any]:
@@ -99,7 +101,8 @@ def _build_config(payload) -> SelfTalkTrainConfig:
     #   - 从 payload.extra 中读取自定义参数
 
     ROOT = Path("/root/autodl-tmp/TFG-SelfTalk/SelfTalk")
-    DATA_ROOT = ROOT / payload.dataset
+    DATA_ROOT = ROOT / payload.dataset  # /root/.../SelfTalk/vocaset
+
 
     # 构造 save 目录
     save_root = DATA_ROOT / "save"
@@ -116,16 +119,17 @@ def _build_config(payload) -> SelfTalkTrainConfig:
         dataset=payload.dataset,
         save_dir=save_dir,
 
-        wav_dir=DATA_ROOT / subject / "wav",
-        vertices_dir=DATA_ROOT / subject / "vertices_npy",
-        template_file=DATA_ROOT / subject / "templates.pkl",
+        wav_dir=DATA_ROOT / "wav",
+        vertices_dir=DATA_ROOT / "vertices_npy",
+        template_file=DATA_ROOT / "templates.pkl",
 
         max_epoch=payload.epochs,
+        feature_dim=64,     # 默认值，可根据实际模型调整
+        vertice_dim=3,      # 默认值，可根据实际模型调整
         gpu=payload.gpu_choice,
         train_subjects=payload.train_subjects,
         val_subjects=payload.val_subjects,
         test_subjects=payload.test_subjects or "",
-
         main_py=ROOT / "main.py",
         root=ROOT
     )

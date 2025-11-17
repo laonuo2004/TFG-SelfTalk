@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional
 
+import os
+
 # NOTE: 延迟导入可避免循环依赖（真实实现时再打开）。
 # from backend.selftalk_trainer import run_selftalk_training
 
@@ -215,8 +217,10 @@ def _train_selftalk_pipeline(payload: TrainingPayload) -> Dict[str, Any]:
     # result = run_selftalk_training(payload)
     # return result
     """
-    SelfTalk 训练流程（完整实现组长的 TODO 全部 4 步）
+    SelfTalk 训练流程骨架（路径适配现有 vocaset 结构）
     """
+    from selftalk_trainer import run_selftalk_training
+
     print("[SelfTalk] 准备进行训练...")
 
     args = {
@@ -228,35 +232,36 @@ def _train_selftalk_pipeline(payload: TrainingPayload) -> Dict[str, Any]:
     }
 
     print("[SelfTalk] 参数：", args)
+    
+    SELF_TALK_ROOT = "/root/autodl-tmp/TFG-SelfTalk/SelfTalk" 
+    dataset_root = os.path.join(SELF_TALK_ROOT, payload.dataset, "wav")
 
-    dataset_root = f"vocaset/{payload.train_subjects}"
-    required_files = [
-        f"{dataset_root}/wav",
-        f"{dataset_root}/vertices_npy",
-        f"{dataset_root}/templates.pkl",
-    ]
+    # save 目录
+    save_dir = os.path.join(SELF_TALK_ROOT, payload.dataset, "save")
+    os.makedirs(save_dir, exist_ok=True)
 
-    for p in required_files:
-        if not os.path.exists(p):
-            return {
-                "status": "failed",
-                "message": f"数据缺失，请检查：{p}"
-            }
 
-    print("[SelfTalk] 数据集检查完成")
+    # dataset_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../SelfTalk", payload.dataset, "wav"))
+
+    # 检查音频文件是否存在
+    train_files = [f for f in os.listdir(dataset_root) if f.startswith(payload.train_subjects)]
+    val_files = [f for f in os.listdir(dataset_root) if f.startswith(payload.val_subjects)]
+
+    if not train_files:
+        return {
+            "status": "failed",
+            "message": f"未找到训练文件，检查前缀：{payload.train_subjects} 在 {dataset_root}"
+        }
+    if not val_files:
+        return {
+            "status": "failed",
+            "message": f"验证音频文件缺失，请检查路径：{dataset_root}, 前缀：{payload.val_subjects}"
+        }
+
+    print(f"[SelfTalk] 训练集文件数：{len(train_files)}，验证集文件数：{len(val_files)}")
 
     try:
-        # 调用 backend/selftalk_trainer.py 的 run_selftalk_training()
-        from backend.selftalk_trainer import run_selftalk_training
-
-        training_output = run_selftalk_training(
-            dataset=args["dataset"],
-            train_subjects=args["train_subjects"],
-            val_subjects=args["val_subjects"],
-            epochs=args["epochs"],
-            device=args["gpu"]
-        )
-
+        training_output = run_selftalk_training(payload)
     except Exception as e:
         print("[SelfTalk] 训练异常：", e)
         return {
@@ -264,14 +269,13 @@ def _train_selftalk_pipeline(payload: TrainingPayload) -> Dict[str, Any]:
             "message": f"SelfTalk 训练失败：{e}",
         }
 
-    save_dir = "vocaset/save"
+    # save_dir = os.path.join(payload.dataset, "save")
     if not os.path.exists(save_dir):
         return {
             "status": "failed",
             "message": f"没有找到模型输出目录：{save_dir}"
         }
 
-    # 按修改时间排序，拿最后一个
     checkpoints = sorted(
         [os.path.join(save_dir, d) for d in os.listdir(save_dir)],
         key=lambda x: os.path.getmtime(x)

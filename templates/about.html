@@ -3,128 +3,349 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>关于我们 - DATA HAMMER TALKING SYSTEM</title>
+    <title>DATA HAMMER GROUP TALKING SYSTEM · 关于我们</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
-    <!-- 只为“团队成员”这一块写一点额外样式，不动你原来的 h2 / 表单样式 -->
+    <!-- 直接内联 index.html 的整体样式 + 关于我们专用样式 -->
     <style>
-        body {
-            font-family: 'Microsoft YaHei', sans-serif;
-            background-color: #f5f5f5;
+        body.main-bg {
+            background: radial-gradient(circle at top, #05070a 0%, #050608 35%, #000000 100%);
+            color: #fff;
+            font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
             margin: 0;
-            padding: 20px 0 40px;
-            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .team-page-container {
+        /* 顶部导航条（与 index.html 保持一致） */
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 32px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            background: linear-gradient(90deg,
+                    rgba(0, 229, 255, 0.18),
+                    rgba(0, 0, 0, 0.6),
+                    rgba(0, 229, 255, 0.08));
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-logo-mark {
+            width: 26px;
+            height: 26px;
+            border-radius: 10px;
+            background: conic-gradient(from 200deg, #00e5ff, #0072ff, #00ffbf, #00e5ff);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.8);
+            position: relative;
+        }
+
+        .nav-logo-mark::after {
+            content: "";
+            position: absolute;
+            inset: 4px;
+            border-radius: 8px;
+            background: radial-gradient(circle at 30% 20%, #0b1b26, #020509);
+        }
+
+        .nav-logo-text-main {
+            font-size: 1.05rem;
+            letter-spacing: 0.12em;
+        }
+
+        .nav-logo-text-sub {
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 22px;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.75);
+            text-decoration: none;
+            position: relative;
+            padding-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 2px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #00e5ff, #00ffbf);
+            transition: width 0.25s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            padding: 8px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 229, 255, 0.5);
+            background: radial-gradient(circle at 0 0, rgba(0, 229, 255, 0.35), transparent);
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #e6faff;
+            transition: all 0.25s ease;
+            text-decoration: none;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
+            background: radial-gradient(circle at 100% 0, rgba(0, 229, 255, 0.5), transparent);
+        }
+
+        /* 页面主体：整体容器，与首页保持一致 */
+        .page-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 24px 16px 24px;
+        }
+
+        .page-inner {
+            width: 100%;
             max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
             margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            padding: 30px 32px 34px;
-            box-sizing: border-box;
-        }
-
-        .team-header-text {
-            text-align: center;
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 24px;
-        }
-
-        .member-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 20px;
         }
 
         @media (max-width: 960px) {
-            .member-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+            .nav {
+                padding: 10px 16px;
+            }
+
+            .page-wrapper {
+                padding: 20px 12px 20px;
             }
         }
 
-        @media (max-width: 640px) {
-            .team-page-container {
-                padding: 20px 16px 24px;
-            }
+        /* 顶部卡片：标题 + 简要说明（复用 index 风格） */
+        .hero-card {
+            background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.18), transparent 55%),
+                        rgba(255, 255, 255, 0.02);
+            border-radius: 18px;
+            padding: 22px 20px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow:
+                0 0 30px rgba(0, 229, 255, 0.18),
+                0 0 90px rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+            width: 100%;
+        }
 
+        .hero-card::before {
+            content: "DATA • HAMMER • TALKING • SYSTEM";
+            position: absolute;
+            top: 10px;
+            right: -40px;
+            font-size: 0.65rem;
+            letter-spacing: 0.35em;
+            color: rgba(255, 255, 255, 0.08);
+            transform: rotate(-6deg);
+            white-space: nowrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(0, 229, 255, 0.5);
+            font-size: 0.75rem;
+            color: #cfefff;
+            margin-bottom: 14px;
+        }
+
+        .badge-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: radial-gradient(circle, #00ffbf, #00e5ff);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.9);
+        }
+
+        .headline {
+            font-size: 1.8rem;
+            margin: 0 0 10px;
+            letter-spacing: 0.08em;
+        }
+
+        .headline span {
+            color: #00e5ff;
+        }
+
+        .subline {
+            font-size: 0.92rem;
+            color: rgba(226, 244, 255, 0.85);
+            max-width: 720px;
+            line-height: 1.7;
+            margin: 0 auto 18px;
+            text-align: left;
+        }
+
+        /* 底部版权，与首页统一 */
+        .footer {
+            text-align: center;
+            padding: 8px 0 14px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        /* ====== 关于我们页面：成员介绍区域 ====== */
+
+        /* 外层卡片：包住整个“项目成员介绍”模块 */
+        .contact-card {
+            background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.12), transparent 60%),
+                        rgba(10, 15, 26, 0.95);
+            border-radius: 18px;
+            padding: 22px 22px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow:
+                0 0 30px rgba(0, 229, 255, 0.18),
+                0 0 90px rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .team-card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #e5edff;
+        }
+
+        .team-card-desc {
+            font-size: 0.85rem;
+            color: rgba(210, 226, 255, 0.9);
+            line-height: 1.7;
+            margin-bottom: 18px;
+        }
+
+        /* 网格：两列布局，一行两个同学 → 7 人就是三行半 */
+        .member-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px 24px;
+        }
+
+        @media (max-width: 900px) {
             .member-grid {
                 grid-template-columns: 1fr;
             }
         }
 
+        /* 单个名片 */
         .member-card {
-            background-color: #fafafa;
-            border-radius: 12px;
-            padding: 16px 16px 14px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            box-sizing: border-box;
+            background: rgba(9, 13, 24, 0.96);
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.55);
+            padding: 14px 16px 12px;
+            box-shadow:
+                0 10px 30px rgba(0, 0, 0, 0.75),
+                0 0 0 1px rgba(15, 23, 42, 0.9);
         }
 
-        .member-top {
+        /* 名片内部：左图 + 右文 */
+        .member-main {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            align-items: stretch;
+            gap: 14px;
         }
 
-        .member-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            overflow: hidden;
-            background-color: #e0e7ff;
+        /* 左边照片位：之后可以换 img */
+        .member-photo {
+            width: 110px;
+            height: 140px;
+            border-radius: 14px;
+            background: radial-gradient(circle at 30% 20%, #38bdf8, #0f172a);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            color: #3f4b8a;
-            font-size: 20px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #e5f2ff;
+            flex-shrink: 0;
+            overflow: hidden;
         }
 
-        .member-avatar img {
+        .member-photo img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: block;
+        }
+
+        /* 右侧文本区域 */
+        .member-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
 
         .member-name {
-            font-size: 16px;
+            font-size: 0.95rem;
             font-weight: 600;
-            margin-bottom: 2px;
         }
 
         .member-major {
-            font-size: 13px;
-            color: #666;
+            font-size: 0.8rem;
+            color: rgba(191, 219, 254, 0.85);
+            margin-top: 2px;
         }
 
         .member-role-tag {
-            display: inline-block;
             margin-top: 4px;
-            font-size: 11px;
+            display: inline-block;
+            font-size: 0.7rem;
             padding: 2px 8px;
             border-radius: 999px;
-            background-color: #e8f4ff;
-            color: #2f80ed;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(59, 130, 246, 0.8);
+            color: #bfdbfe;
         }
 
         .member-intro {
-            font-size: 13px;
+            font-size: 0.8rem;
             line-height: 1.6;
-            color: #555;
+            color: rgba(226, 232, 240, 0.95);
+            margin-top: 4px;
         }
 
         .member-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 4px;
+            margin-top: 8px;
         }
 
         .member-skills {
@@ -134,219 +355,253 @@
         }
 
         .skill-chip {
-            font-size: 11px;
+            font-size: 0.72rem;
             padding: 2px 6px;
             border-radius: 999px;
-            background-color: #f0f0f0;
-            color: #666;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(55, 65, 81, 0.9);
+            color: rgba(209, 213, 219, 0.95);
         }
 
         .member-index {
-            font-size: 11px;
-            color: #999;
+            font-size: 0.7rem;
+            color: rgba(148, 163, 184, 0.9);
         }
     </style>
 </head>
 
-<body>
-    <!-- 标题用 h2，样式由 style.css 控制（和“视频生成界面”保持一致） -->
-    <h2>关于我们 · 项目成员</h2>
+<body class="main-bg">
+    <!-- 顶部导航 -->
+    <div class="nav">
+        <div class="nav-logo">
+            <div class="nav-logo-mark"></div>
+            <div>
+                <div class="nav-logo-text-main">DATA HAMMER GROUP</div>
+                <div class="nav-logo-text-sub">Talking System</div>
+            </div>
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('index') }}">首页</a>
+            <a href="{{ url_for('chat_system') }}">人机对话</a>
+            <a href="{{ url_for('model_training') }}">模型训练</a>
+            <a href="{{ url_for('video_generation') }}">视频生成</a>
+            <a href="{{ url_for('about') }}">关于我们</a>
+        </div>
+        <a href="{{ url_for('index') }}" class="nav-cta">
+            返回首页
+        </a>
+    </div>
 
-    <div class="team-page-container">
-        <p class="team-header-text">
-            DATA HAMMER Talking System 项目共有 7 名成员，分别负责界面设计、语音识别、语音合成、模型训练、
-            部署运维与文档展示等工作。本页面用于介绍每位成员的背景和分工，方便老师快速了解小组整体情况。
-        </p>
-
-        <div class="member-grid">
-            <!-- 1 -->
-            <div class="member-card">
-                <div class="member-top">
-                    <div class="member-avatar">
-                        <!-- 以后放照片：static/img/members/member1.jpg -->
-                        <!-- <img src="{{ url_for('static', filename='img/members/member1.jpg') }}" alt="成员照片"> -->
-                        PM
-                    </div>
-                    <div>
-                        <div class="member-name">张同学</div>
-                        <div class="member-major">计算机科学与技术 · 项目负责人</div>
-                        <span class="member-role-tag">总体规划 / 任务分配</span>
-                    </div>
+    <div class="page-wrapper">
+        <div class="page-inner">
+            <!-- 顶部说明卡片 -->
+            <div class="hero-card">
+                <div class="badge">
+                    <div class="badge-dot"></div>
+                    <span>ABOUT · DATA HAMMER TALKING SYSTEM</span>
                 </div>
-                <p class="member-intro">
-                    负责整体方案设计与进度把控，协调前后端接口，对接华为云与算力平台。
-                    关注项目的<strong>可落地性</strong>与<strong>演示效果</strong>，带领小组完成从需求到展示的闭环。
+                <h1 class="headline">关于我们 · <span>PROJECT MEMBERS</span></h1>
+                <p class="subline">
+                    DATA HAMMER Talking System 由 7 名成员共同完成，覆盖前端界面设计、语音识别、语音合成、模型训练、
+                    部署运维和文档展示等环节。本页面仅展示项目成员及分工，便于老师快速了解小组在系统中的角色划分。
                 </p>
-                <div class="member-footer">
-                    <div class="member-skills">
-                        <span class="skill-chip">项目管理</span>
-                        <span class="skill-chip">接口设计</span>
-                        <span class="skill-chip">文档统筹</span>
+            </div>
+
+            <!-- 成员介绍区域 -->
+            <div class="contact-card">
+                <div class="team-card-title">项目成员介绍</div>
+                <div class="team-card-desc">
+                    以下为本项目的 7 位成员及其主要分工。后续可以为每位同学接入真实照片（例如放在
+                    <code>static/img/members/</code> 目录），将下面的占位块替换为 <code>&lt;img&gt;</code> 即可。
+                </div>
+
+                <div class="member-grid">
+                    <!-- 1：项目负责人 -->
+                    <div class="member-card">
+                        <div class="member-main">
+                            <div class="member-photo">PM</div>
+                            <div class="member-content">
+                                <div>
+                                    <div class="member-name">张同学</div>
+                                    <div class="member-major">计算机科学与技术 · 项目负责人</div>
+                                    <span class="member-role-tag">总体规划 / 任务分配</span>
+                                </div>
+                                <div class="member-intro">
+                                    负责整体方案设计与进度把控，协调前后端接口，对接华为云与算力平台。
+                                    关注项目的<strong>可落地性</strong>和<strong>演示效果</strong>，带领小组完成从需求到展示的闭环。
+                                </div>
+                                <div class="member-footer">
+                                    <div class="member-skills">
+                                        <span class="skill-chip">项目管理</span>
+                                        <span class="skill-chip">接口设计</span>
+                                        <span class="skill-chip">文档统筹</span>
+                                    </div>
+                                    <span class="member-index">01 / 07</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <span class="member-index">01 / 07</span>
+
+                    <!-- 2：你自己 · 前端 -->
+                    <div class="member-card">
+                        <div class="member-main">
+                            <div class="member-photo">FE</div>
+                            <div class="member-content">
+                                <div>
+                                    <div class="member-name">刘兆钰</div>
+                                    <div class="member-major">计算机专业基础实习 · 前端开发</div>
+                                    <span class="member-role-tag">前端 UI / 交互</span>
+                                </div>
+                                <div class="member-intro">
+                                    负责项目前端界面设计与实现，包括首页、“关于我们”界面、人机对话入口等。
+                                    使用 Flask 模板 + HTML + CSS 完成布局与样式，重点提升<strong>界面一致性</strong>和<strong>使用体验</strong>。
+                                </div>
+                                <div class="member-footer">
+                                    <div class="member-skills">
+                                        <span class="skill-chip">HTML / CSS</span>
+                                        <span class="skill-chip">Flask 模板</span>
+                                        <span class="skill-chip">交互设计</span>
+                                    </div>
+                                    <span class="member-index">02 / 07</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3：ASR -->
+                    <div class="member-card">
+                        <div class="member-main">
+                            <div class="member-photo">ASR</div>
+                            <div class="member-content">
+                                <div>
+                                    <div class="member-name">李同学</div>
+                                    <div class="member-major">人工智能 · 语音识别模块</div>
+                                    <span class="member-role-tag">ASR & 对话理解</span>
+                                </div>
+                                <div class="member-intro">
+                                    负责语音识别（ASR）模块接入与调优，设计前端上传音频的调用方式，
+                                    确保可以<strong>稳定输出文本结果</strong>，为后续语义理解与对话逻辑提供输入。
+                                </div>
+                                <div class="member-footer">
+                                    <div class="member-skills">
+                                        <span class="skill-chip">ASR</span>
+                                        <span class="skill-chip">Python</span>
+                                        <span class="skill-chip">接口联调</span>
+                                    </div>
+                                    <span class="member-index">03 / 07</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4：TTS -->
+                    <div class="member-card">
+                        <div class="member-main">
+                            <div class="member-photo">TTS</div>
+                            <div class="member-content">
+                                <div>
+                                    <div class="member-name">王同学</div>
+                                    <div class="member-major">软件工程 · 语音合成模块</div>
+                                    <span class="member-role-tag">TTS & 声音克隆</span>
+                                </div>
+                                <div class="member-intro">
+                                    负责语音合成与声音克隆流程，实现文本到语音的转换，
+                                    尝试不同说话人风格与情感表达，让系统的输出<strong>更自然、更接近真实人声</strong>。
+                                </div>
+                                <div class="member-footer">
+                                    <div class="member-skills">
+                                        <span class="skill-chip">TTS</span>
+                                        <span class="skill-chip">声码器</span>
+                                        <span class="skill-chip">音频处理</span>
+                                    </div>
+                                    <span class="member-index">04 / 07</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5：模型训练 -->
+                    <div class="member-card">
+                        <div class="member-main">
+                            <div class="member-photo">DL</div>
+                            <div class="member-content">
+                                <div>
+                                    <div class="member-name">赵同学</div>
+                                    <div class="member-major">人工智能 · 模型训练</div>
+                                    <span class="member-role-tag">训练脚本 / 日志</span>
+                                </div>
+                                <div class="member-intro">
+                                    负责训练脚本与实验配置管理，跟踪不同超参数下的效果与收敛情况，
+                                    输出可复现的<strong>训练流水线</strong>和<strong>对比实验</strong>。
+                                </div>
+                                <div class="member-footer">
+                                    <div class="member-skills">
+                                        <span class="skill-chip">深度学习</span>
+                                        <span class="skill-chip">PyTorch</span>
+                                        <span class="skill-chip">实验管理</span>
+                                    </div>
+                                    <span class="member-index">05 / 07</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6：部署运维 -->
+                    <div class="member-card">
+                        <div class="member-main">
+                            <div class="member-photo">OPS</div>
+                            <div class="member-content">
+                                <div>
+                                    <div class="member-name">钱同学</div>
+                                    <div class="member-major">网络空间安全 · 部署运维</div>
+                                    <span class="member-role-tag">环境配置 / 部署</span>
+                                </div>
+                                <div class="member-intro">
+                                    负责服务器环境与依赖配置，处理 GPU、驱动与库版本问题，
+                                    把后端模型稳定部署在 Autodl / 华为云等平台上。
+                                </div>
+                                <div class="member-footer">
+                                    <div class="member-skills">
+                                        <span class="skill-chip">Linux</span>
+                                        <span class="skill-chip">环境管理</span>
+                                        <span class="skill-chip">部署脚本</span>
+                                    </div>
+                                    <span class="member-index">06 / 07</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 7：文档与展示 -->
+                    <div class="member-card">
+                        <div class="member-main">
+                            <div class="member-photo">DOC</div>
+                            <div class="member-content">
+                                <div>
+                                    <div class="member-name">孙同学</div>
+                                    <div class="member-major">信息工程 · 文档与展示</div>
+                                    <span class="member-role-tag">报告 / PPT / 演示</span>
+                                </div>
+                                <div class="member-intro">
+                                    负责项目报告、使用说明和答辩展示材料，把技术细节整理成<strong>清晰易读的文档</strong>，
+                                    帮助老师和同学快速理解系统设计与实现过程。
+                                </div>
+                                <div class="member-footer">
+                                    <div class="member-skills">
+                                        <span class="skill-chip">技术写作</span>
+                                        <span class="skill-chip">可视化</span>
+                                        <span class="skill-chip">汇报展示</span>
+                                    </div>
+                                    <span class="member-index">07 / 07</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- 2：你自己，可以按需修改介绍 -->
-            <div class="member-card">
-                <div class="member-top">
-                    <div class="member-avatar">
-                        <!-- <img src="{{ url_for('static', filename='img/members/member2.jpg') }}" alt="成员照片"> -->
-                        FE
-                    </div>
-                    <div>
-                        <div class="member-name">刘兆钰</div>
-                        <div class="member-major">计算机专业基础实习 · 前端开发</div>
-                        <span class="member-role-tag">前端 UI / 交互</span>
-                    </div>
-                </div>
-                <p class="member-intro">
-                    负责项目的前端界面设计与实现，包括首页、“关于我们”页面、人机对话入口等。
-                    使用 Flask 模板 + HTML + CSS 完成布局与样式，重点提升<strong>界面一致性</strong>和<strong>使用体验</strong>。
-                </p>
-                <div class="member-footer">
-                    <div class="member-skills">
-                        <span class="skill-chip">HTML / CSS</span>
-                        <span class="skill-chip">Flask 模板</span>
-                        <span class="skill-chip">交互设计</span>
-                    </div>
-                    <span class="member-index">02 / 07</span>
-                </div>
-            </div>
-
-            <!-- 3 -->
-            <div class="member-card">
-                <div class="member-top">
-                    <div class="member-avatar">
-                        <!-- <img src="{{ url_for('static', filename='img/members/member3.jpg') }}" alt="成员照片"> -->
-                        ASR
-                    </div>
-                    <div>
-                        <div class="member-name">李同学</div>
-                        <div class="member-major">人工智能 · 语音识别模块</div>
-                        <span class="member-role-tag">ASR & 对话理解</span>
-                    </div>
-                </div>
-                <p class="member-intro">
-                    负责语音识别（ASR）模块接入与调优，设计前端上传音频的调用方式，
-                    确保可以<strong>稳定输出文本结果</strong>，为后续语义理解与对话逻辑提供输入。
-                </p>
-                <div class="member-footer">
-                    <div class="member-skills">
-                        <span class="skill-chip">ASR</span>
-                        <span class="skill-chip">Python</span>
-                        <span class="skill-chip">接口联调</span>
-                    </div>
-                    <span class="member-index">03 / 07</span>
-                </div>
-            </div>
-
-            <!-- 4 -->
-            <div class="member-card">
-                <div class="member-top">
-                    <div class="member-avatar">
-                        <!-- <img src="{{ url_for('static', filename='img/members/member4.jpg') }}" alt="成员照片"> -->
-                        TTS
-                    </div>
-                    <div>
-                        <div class="member-name">王同学</div>
-                        <div class="member-major">软件工程 · 语音合成模块</div>
-                        <span class="member-role-tag">TTS & 声音克隆</span>
-                    </div>
-                </div>
-                <p class="member-intro">
-                    负责语音合成与声音克隆流程，实现文本到语音的转换，
-                    尝试不同说话人风格与情感表达，让系统的输出<strong>更自然、更接近真实人声</strong>。
-                </p>
-                <div class="member-footer">
-                    <div class="member-skills">
-                        <span class="skill-chip">TTS</span>
-                        <span class="skill-chip">声码器</span>
-                        <span class="skill-chip">音频处理</span>
-                    </div>
-                    <span class="member-index">04 / 07</span>
-                </div>
-            </div>
-
-            <!-- 5 -->
-            <div class="member-card">
-                <div class="member-top">
-                    <div class="member-avatar">
-                        <!-- <img src="{{ url_for('static', filename='img/members/member5.jpg') }}" alt="成员照片"> -->
-                        DL
-                    </div>
-                    <div>
-                        <div class="member-name">赵同学</div>
-                        <div class="member-major">人工智能 · 模型训练</div>
-                        <span class="member-role-tag">训练脚本 / 日志</span>
-                    </div>
-                </div>
-                <p class="member-intro">
-                    负责训练脚本与实验配置管理，跟踪不同超参数下的效果与收敛情况，
-                    输出可复现的<strong>训练流水线</strong>和<strong>对比实验</strong>。
-                </p>
-                <div class="member-footer">
-                    <div class="member-skills">
-                        <span class="skill-chip">深度学习</span>
-                        <span class="skill-chip">PyTorch</span>
-                        <span class="skill-chip">实验管理</span>
-                    </div>
-                    <span class="member-index">05 / 07</span>
-                </div>
-            </div>
-
-            <!-- 6 -->
-            <div class="member-card">
-                <div class="member-top">
-                    <div class="member-avatar">
-                        <!-- <img src="{{ url_for('static', filename='img/members/member6.jpg') }}" alt="成员照片"> -->
-                        OPS
-                    </div>
-                    <div>
-                        <div class="member-name">钱同学</div>
-                        <div class="member-major">网络空间安全 · 部署运维</div>
-                        <span class="member-role-tag">环境配置 / 部署</span>
-                    </div>
-                </div>
-                <p class="member-intro">
-                    负责服务器环境与依赖配置，处理 GPU、驱动与库版本问题，
-                    把后端模型稳定部署在 Autodl / 华为云等平台上。
-                </p>
-                <div class="member-footer">
-                    <div class="member-skills">
-                        <span class="skill-chip">Linux</span>
-                        <span class="skill-chip">环境管理</span>
-                        <span class="skill-chip">部署脚本</span>
-                    </div>
-                    <span class="member-index">06 / 07</span>
-                </div>
-            </div>
-
-            <!-- 7 -->
-            <div class="member-card">
-                <div class="member-top">
-                    <div class="member-avatar">
-                        <!-- <img src="{{ url_for('static', filename='img/members/member7.jpg') }}" alt="成员照片"> -->
-                        DOC
-                    </div>
-                    <div>
-                        <div class="member-name">孙同学</div>
-                        <div class="member-major">信息工程 · 文档与展示</div>
-                        <span class="member-role-tag">报告 / PPT / 演示</span>
-                    </div>
-                </div>
-                <p class="member-intro">
-                    负责项目报告、使用说明和答辩展示材料，把技术细节整理成<strong>清晰易读的文档</strong>，
-                    帮助老师和同学快速理解系统设计与实现过程。
-                </p>
-                <div class="member-footer">
-                    <div class="member-skills">
-                        <span class="skill-chip">技术写作</span>
-                        <span class="skill-chip">可视化</span>
-                        <span class="skill-chip">汇报展示</span>
-                    </div>
-                    <span class="member-index">07 / 07</span>
-                </div>
+            <div class="footer">
+                © 2025 DATA HAMMER GROUP · SelfTalk Project
             </div>
         </div>
     </div>

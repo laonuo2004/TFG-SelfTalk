@@ -59,6 +59,10 @@ def save_audio():
     """
     return 'ok'
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
 if __name__ == '__main__':
     # 监听所有网卡，方便 VS Code 端口转发
     app.run(host='0.0.0.0', port=5001, debug=True)
