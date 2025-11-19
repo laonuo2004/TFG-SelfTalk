@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional
 
-# from backend.selftalk_generator import run_selftalk_inference
+from backend.selftalk_generator import run_selftalk_inference
 
 GenerationHandler = Callable[["GenerationPayload"], Dict[str, Any]]
 
@@ -30,25 +30,13 @@ class GenerationPayload:
 
 
 def generate_video(form_data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    视频生成调度入口。
+    """视频生成调度入口。
 
     Args:
-        form_data (Dict[str, Any]): 前端传入的参数，常见字段：
-            - `model_name`: "SyncTalk" / "SelfTalk"
-            - `model_param`: SyncTalk 模型目录
-            - `model_path`: SelfTalk checkpoint
-            - `ref_audio`: 音频文件路径
-            - `subject`: SelfTalk 渲染模板
-            - `gpu_choice`: 执行设备
+        form_data (Dict[str, Any]): 来自前端的原始请求数据。
 
     Returns:
-        Dict[str, Any]: 统一的生成结果，如
-            {
-                "status": "success",
-                "video_path": "/static/videos/xxx.mp4",
-                "logs": [...]
-            }
+        Dict[str, Any]: handler 返回的统一结构。
     """
     payload = _normalize_generation_payload(form_data)
     handler = _resolve_generation_handler(payload.model_name)
@@ -56,26 +44,24 @@ def generate_video(form_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _normalize_generation_payload(form_data: Dict[str, Any]) -> GenerationPayload:
-    """
-    规范化生成入参。
+    """规范化生成入参。
 
     Args:
-        form_data (Dict[str, Any]): 原始表单字段。
+        form_data (Dict[str, Any]): 原始表单字段或 JSON。
 
     Returns:
-        GenerationPayload: 标准化对象，便于 handler 使用。
+        GenerationPayload: 标准化后的数据对象。
 
     TODO:
-        - 处理文件上传路径
-        - 支持默认音频/模型的选择
-        - 提供参数校验与错误提示
+        - 增加字段校验与错误提示。
+        - 通过配置提供默认模型/音频。
     """
     payload = GenerationPayload(
         model_name=form_data.get("model_name", "SyncTalk"),
         gpu_choice=form_data.get("gpu_choice", "GPU0"),
-        ref_audio=form_data.get("ref_audio"),
+        ref_audio=form_data.get("ref_audio") or form_data.get("audio_path"),
         model_param=form_data.get("model_param"),
-        model_path=form_data.get("model_path"),
+        model_path=form_data.get("model_path") or form_data.get("model_param"),
         subject=form_data.get("subject"),
         dataset=form_data.get("dataset", "vocaset"),
         output_dir=form_data.get("output_dir", "static/videos"),
@@ -110,47 +96,42 @@ def _resolve_generation_handler(model_name: str) -> GenerationHandler:
 
 
 def _generate_with_synctalk(payload: GenerationPayload) -> Dict[str, Any]:
-    """
-    SyncTalk 推理流程骨架。
+    """SyncTalk 推理流程骨架。
 
     Args:
-        payload (GenerationPayload): 已校验的参数。
+        payload (GenerationPayload): 标准化后的 SyncTalk 请求参数。
 
     Returns:
-        Dict[str, Any]: 包含 status、video_path、logs 等。
+        Dict[str, Any]: 统一的失败说明，提醒使用 SelfTalk。
 
     TODO:
-        1. 校验 payload.model_param / payload.ref_audio
-        2. 拼接 run_synctalk.sh infer 命令
-        3. 监听子进程输出，实时推送给前端
-        4. 推理结束后寻找生成的视频，拷贝到 static/videos
-        5. 返回 {status, video_path, logs}
+        - 若未来仍需兼容 SyncTalk，在此调用 Docker / shell 脚本。
     """
-    # TODO: 实现与 SyncTalk Docker 的对接
-    raise NotImplementedError("SyncTalk 推理流程待实现")
+    return {
+        "status": "failed",
+        "message": "我们不使用 SyncTalk，请选择 SelfTalk。",
+        "video_path": "",
+    }
 
 
 def _generate_with_selftalk(payload: GenerationPayload) -> Dict[str, Any]:
-    """
-    SelfTalk 推理流程骨架。
+    """SelfTalk 推理流程骨架。
 
     Args:
-        payload (GenerationPayload): SelfTalk 所需参数。
+        payload (GenerationPayload): SelfTalk 所需参数集合。
 
     Returns:
-        Dict[str, Any]: 包含 status、video_path 等。
+        Dict[str, Any]: `run_selftalk_inference` 的执行结果。
 
     TODO:
-        1. 准备 SelfTalk checkpoint、subject 模板、音频
-        2. 调用 backend.selftalk_generator.run_selftalk_inference()
-        3. 渲染顶点序列 + 合并音频
-        4. 返回生成的视频路径
-
-    NOTE:
-        SelfTalk 输出为 3D mesh 动画，需要额外渲染步骤；
-        推理耗时更长，推荐后台任务 + 轮询进度。
+        - 增加队列/任务管理，避免同步阻塞。
+        - 将更多渲染参数暴露为可配置项。
     """
-    # TODO: 调用 SelfTalk 推理模块
-    # result = run_selftalk_inference(payload)
-    # return result
-    raise NotImplementedError("SelfTalk 推理流程待实现")
+    if not payload.ref_audio:
+        return {
+            "status": "failed",
+            "message": "SelfTalk 推理需要音频路径 ref_audio",
+        }
+
+    result = run_selftalk_inference(payload)
+    return result

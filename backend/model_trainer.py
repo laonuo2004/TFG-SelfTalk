@@ -216,7 +216,7 @@ def _train_selftalk_pipeline(payload: TrainingPayload) -> Dict[str, Any]:
     """
     SelfTalk 训练流程骨架（路径适配现有 vocaset 结构）
     """
-    from selftalk_trainer import run_selftalk_training
+    from backend.selftalk_trainer import run_selftalk_training
 
     print("[SelfTalk] 准备进行训练...")
 
