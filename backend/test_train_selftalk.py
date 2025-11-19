@@ -4,7 +4,7 @@ data = {
     'model_choice': 'SelfTalk',
     'dataset': 'vocaset',
     'train_subjects': 'FaceTalk_170728_03272_TA',
-    'val_subjects': 'FaceTalk_170811_03275_TA',
+    'val_subjects': '',
     'epoch': '1',
     'gpu_choice': 'cuda:0',
 }

@@ -77,14 +77,11 @@ def _normalize_training_payload(form_data: Dict[str, Any]) -> TrainingPayload:
         - 检查必填项（SyncTalk 需要 ref_video，自检）
         - 记录日志方便定位问题
     """
-    model_choice = form_data.get("model_choice", "SyncTalk")
-    gpu_choice = form_data.get("gpu_choice", "GPU0")
-    epochs = int(form_data.get("epoch", 100))
 
     payload = TrainingPayload(
-        model_choice=model_choice,
-        gpu_choice=gpu_choice,
-        epochs=epochs,
+        model_choice = form_data.get("model_choice", "SyncTalk"),
+        gpu_choice = form_data.get("gpu_choice", "GPU0"),
+        epochs = int(form_data.get("epoch", 100)),
         ref_video=form_data.get("ref_video"),
         dataset=form_data.get("dataset", "vocaset"),
         train_subjects=form_data.get("train_subjects"),
