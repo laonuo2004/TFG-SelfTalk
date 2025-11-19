@@ -134,7 +134,7 @@
 
         .page-inner {
             width: 100%;
-            max-width: 1100px;
+            max-width: 720px;
             display: flex;
             flex-direction: column;
             gap: 18px;
@@ -170,6 +170,9 @@
                 0 0 30px rgba(0, 229, 255, 0.18),
                 0 0 90px rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(14px);
+            width: 100%;
+            max-width: 720px;
+            margin: 0 auto;
         }
 
         @media (max-width: 900px) {
@@ -191,6 +194,7 @@
             border-radius: 10px;
             box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
             max-width: 100%;
+            height: 210px;   /* 👉 想要多高就改这里，比如 260 / 300 都行 */
         }
 
         /* 右侧表单卡片 */
@@ -267,6 +271,77 @@
             font-size: 0.8rem;
             color: rgba(255, 255, 255, 0.35);
         }
+
+        /* LZY修改标题格式 */
+        .headline {
+            font-size: 1.8rem;
+            margin: 0 0 10px;
+            letter-spacing: 0.08em;
+        }
+
+        .headline span {
+            color: #00e5ff;
+        }
+
+        .subline {
+            font-size: 0.92rem;
+            color: rgba(226, 244, 255, 0.85);
+            max-width: 720px;
+            line-height: 1.7;
+            margin: 0 auto 18px;
+            text-align: center;
+        }
+
+        .hero-card {
+            background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.18), transparent 55%),
+                        rgba(255, 255, 255, 0.02);
+            border-radius: 18px;
+            padding: 22px 20px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow:   
+                0 0 30px rgba(0, 229, 255, 0.18),
+                0 0 90px rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+            width: 100%;
+            text-align: center;
+        }
+
+        .hero-card::before {
+            content: "DATA • HAMMER • TALKING • SYSTEM";
+            position: absolute;
+            top: 10px;
+            right: -40px;
+            font-size: 0.65rem;
+            letter-spacing: 0.35em;
+            color: rgba(255, 255, 255, 0.08);
+            transform: rotate(-6deg);
+            white-space: nowrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(0, 229, 255, 0.5);
+            font-size: 0.75rem;
+            color: #cfefff;
+            margin-bottom: 14px;
+        }
+
+        .badge-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: radial-gradient(circle, #00ffbf, #00e5ff);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.9);
+        }
+        /* 到此 */
     </style>
 </head>
 
@@ -295,10 +370,17 @@
     <!-- 页面内容 -->
     <main class="page-wrapper">
         <div class="page-inner">
-            <section class="page-header">
-                <h2 class="page-title">模型训练界面</h2>
-                <p class="page-subtitle">配置参数 · 载入参考素材 · 启动 SyncTalk 模型训练流程</p>
-            </section>
+            <!-- 顶部说明卡片 -->
+            <div class="hero-card">
+                <div class="badge">
+                    <div class="badge-dot"></div>
+                    <span>MODEL · DATA HAMMER TALKING SYSTEM</span>
+                </div>
+                <h1 class="headline">模型训练界面 · <span>TRAIN</span></h1>
+                <p class="subline">
+                    配置参数 · 载入参考素材 · 启动 SyncTalk 模型训练流程
+                </p>
+            </div>
 
             <div class="video-page-container">
                 <!-- 左侧：训练结果 / 参考视频显示 -->
