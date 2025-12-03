@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-import contextlib
+import logging
 import shutil
 import uuid
 import wave
@@ -15,10 +15,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from backend.services.volc_clients import chat_llm, speech_recognizer, tts_engine
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 STATIC_DIR = BASE_DIR / "static"
 TTS_OUTPUT_DIR = STATIC_DIR / "audios" / "tts"
 TTS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -119,62 +122,74 @@ def _build_chat_request(form_data: Dict[str, Any]) -> ChatRequest:
 
 
 def _run_speech_recognition(audio_path: Path) -> str:
-    """占位 ASR，将被真实识别替换。
-
+    """调用火山 ASR 服务获取录音文本.
+    
     Args:
         audio_path (Path): 录音文件路径。
 
     Returns:
-        str: 模拟的识别结果。
+        str: 录音文本。
 
-    TODO:
-        - 接入 Whisper 或云端 ASR，返回真实文本。
     """
-    duration = _estimate_duration(audio_path)
-    return f"用户语音（约 {duration:.1f} 秒）已记录。"
+    try:
+        return speech_recognizer.transcribe(str(audio_path))
+    except Exception as exc:
+        logger.error("调用火山 ASR 失败: %s", exc)
+        raise
 
 
-def _run_large_language_model(transcript: str, api_key: Optional[str], model_name: str) -> str:
-    """占位 LLM，待替换为真实大模型调用。
-
+def _run_large_language_model(
+    transcript: str,
+    api_key: Optional[str],
+    model_name: str,
+) -> str:
+    """调用豆包大模型生成回复.
+    
     Args:
-        transcript (str): 用户问题文本。
-        api_key (Optional[str]): 第三方模型所需的 API Key。
+        transcript (str): 录音文本。
+        api_key (Optional[str]): API 密钥。
         model_name (str): 模型名称。
 
     Returns:
-        str: AI 回复文本。
-
-    TODO:
-        - 接入智谱/讯飞/Kimi/OpenAI 等实际接口。
-        - 根据上下文构造提示词，支持多轮对话。
+        str: 回复文本。
     """
-    prefix = "AI 回复"
-    if model_name:
-        prefix = f"{model_name} 回复"
-    return f"{prefix}：感谢你的提问。根据语音内容“{transcript}”，我正在使用 SelfTalk 生成回答视频。"
+    system_prompt = (
+        "你是 DATA HAMMER GROUP 的数字助理，请用简短自然的口语回答用户问题。"
+    )
+    history: Optional[list[dict[str, str]]] = None
+    # 目前统一走项目级 API Key，api_key 参数预留用于后续扩展差异化身份。
+    try:
+        return chat_llm.chat(
+            transcript,
+            history=history,
+            system_prompt=system_prompt,
+        )
+    except Exception as exc:
+        logger.error("调用火山大模型失败: %s", exc)
+        raise
 
 
 def _run_tts_clone(text: str, reference_audio: Path) -> str:
-    """语音克隆占位实现。
-
+    """使用火山 TTS 生成回复音频.
+    
     Args:
-        text (str): 需要朗读的内容。
-        reference_audio (Path): 参考音色文件。
+        text (str): 回复文本。
+        reference_audio (Path): 参考音色文件路径。
 
     Returns:
         str: 合成音频路径。
-
-    TODO:
-        - 调用真正的 TTS/语音克隆模型（GPT-SoVITS、CosyVoice 等）。
-        - 支持多语言、情感控制。
     """
-    target = TTS_OUTPUT_DIR / f"tts_{uuid.uuid4().hex}.wav"
-    if reference_audio.exists():
-        shutil.copy(reference_audio, target)
-    else:
-        _synthesize_silence(target)
-    return str(target.resolve())
+    try:
+        return tts_engine.synthesize(text)
+    except Exception as exc:
+        logger.error("调用火山 TTS 失败，将回落到参考音频: %s", exc)
+        # 回退方案：直接复用参考音色，以保证流程不中断。
+        fallback = TTS_OUTPUT_DIR / f"tts_fallback_{uuid.uuid4().hex}{reference_audio.suffix or '.wav'}"
+        if reference_audio.exists():
+            shutil.copy(reference_audio, fallback)
+        else:
+            _synthesize_silence(fallback)
+        return str(fallback.resolve())
 
 
 def _run_video_generation(
@@ -221,16 +236,6 @@ def _to_abs_path(path_str: str) -> Path:
     if guess.exists():
         return guess
     raise FileNotFoundError(f"无法定位文件：{path_str}")
-
-
-def _estimate_duration(audio_path: Path) -> float:
-    try:
-        with contextlib.closing(wave.open(str(audio_path), "rb")) as wf:
-            frames = wf.getnframes()
-            rate = wf.getframerate() or 16000
-            return frames / float(rate)
-    except Exception:
-        return 0.0
 
 
 def _synthesize_silence(target: Path, seconds: int = 1) -> None:
