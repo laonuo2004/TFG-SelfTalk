@@ -319,6 +319,7 @@
             <a href="/chat_system">人机对话</a>
             <a href="/model_training">模型训练</a>
             <a href="/video_generation">视频生成</a>
+            <a href="/实时对话.html">实时对话</a>
             <a href="/about">关于我们</a>
         </nav>
         <button class="nav-cta" onclick="window.location.href='/chat_system'">
@@ -359,6 +360,10 @@
                         人机对话
                         <span class="label-sub">Chat System</span>
                     </button>
+                    <button onclick="window.location.href='/实时对话.html'">
+                        实时对话
+                        <span class="label-sub">Realtime</span>
+                    </button>
                     <button onclick="window.location.href='/about'">
                         关于我们
                         <span class="label-sub">About Us</span>
@@ -385,6 +390,62 @@
     <footer class="footer">
         © 2025 DATA HAMMER LAB · All Rights Reserved
     </footer>
+    <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuid.min.js"></script>
+    <script>
+        // 从 Flask 后端传递的 WebSocket 配置
+        const wsConfig = {{ ws_config|tojson }};
+        console.log(wsConfig);  // 输出配置以确保传递正确
 
+        // WebSocket 连接配置
+        const ws = new WebSocket(wsConfig.base_url);
+
+        // 在 WebSocket 连接成功时，发送配置信息到后端
+        ws.onopen = () => {
+            console.log("WebSocket连接成功！");
+            const startSessionReq = {
+                asr: {
+                    extra: {
+                        end_smooth_window_ms: 1500
+                    }
+                },
+                tts: {
+                    speaker: "zh_female_vv_jupiter_bigtts",
+                    audio_config: {
+                        channel: 1,
+                        format: "pcm",
+                        sample_rate: 24000
+                    }
+                },
+                dialog: {
+                    bot_name: "豆包",
+                    system_role: "你使用活泼灵动的女声，性格开朗，热爱生活。",
+                    speaking_style: "语速适中，语调自然。",
+                    location: { city: "北京" },
+                    extra: {
+                        strict_audit: false,
+                        audit_response: "支持客户自定义安全审核回复话术。",
+                        input_mod: "audio",
+                        model: "O"
+                    }
+                }
+            };
+            // 发送开始会话请求
+            ws.send(JSON.stringify(startSessionReq));
+        };
+
+        // 处理服务器的响应
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log("Received message:", data);
+        };
+
+        ws.onerror = (error) => {
+            console.error("WebSocket 错误:", error);
+        };
+
+        ws.onclose = () => {
+            console.log("WebSocket 连接已关闭！");
+        };
+    </script>
 </body>
 </html>
