@@ -1,0 +1,24 @@
+[MAIN] WebSocket relay started in background thread
+ * Serving Flask app 'app'
+ * Debug mode: on
+Exception in thread ws-relay-thread:
+Traceback (most recent call last):
+  File "/root/miniconda3/lib/python3.8/threading.py", line 932, in _bootstrap_inner
+    self.run()
+  File "/root/miniconda3/lib/python3.8/threading.py", line 870, in run
+    self._target(*self._args, **self._kwargs)
+  File "app.py", line 393, in run_ws_server
+    asyncio.run(ws_main())
+  File "/root/miniconda3/lib/python3.8/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/root/miniconda3/lib/python3.8/asyncio/base_events.py", line 616, in run_until_complete
+    return future.result()
+  File "app.py", line 379, in ws_main
+    server = await websockets.serve(
+  File "/root/autodl-tmp/TFG-SelfTalk/selftalk-venv/lib/python3.8/site-packages/websockets/legacy/server.py", line 1132, in __await_impl__
+    server = await self._create_server()
+  File "/root/miniconda3/lib/python3.8/asyncio/base_events.py", line 1463, in create_server
+    raise OSError(err.errno, 'error while attempting '
+OSError: [Errno 98] error while attempting to bind on address ('0.0.0.0', 6006): address already in use
+Address already in use
+Port 6008 is in use by another program. Either identify and stop that program, or start the server with a different port.

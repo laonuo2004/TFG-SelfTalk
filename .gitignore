@@ -7,6 +7,12 @@ build/
 dist/
 *.egg-info/
 
+# Environment
+*venv/
+
+# Data
+*.wav
+
 SyncTalk/SyncTalk/
 
 GPT-SoVITS/
@@ -22,3 +28,4 @@ docs/AI/
 # other
 .specstory/
 .cursorindexingignore
+.DS_Store
