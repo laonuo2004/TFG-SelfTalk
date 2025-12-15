@@ -5,8 +5,8 @@ import pyaudio
 ws_connect_config = {
     "base_url": "wss://openspeech.bytedance.com/api/v3/realtime/dialogue",
     "headers": {
-        "X-Api-App-ID": "1656653832",
-        "X-Api-Access-Key": "Kd5Eo5Dj3YY6tsVfct5FjfIbCeRnjrI8",
+        "X-Api-App-ID": "4843214853",
+        "X-Api-Access-Key": "eouy3Qw0RB2IYRlusueJKQ9l5wajqFmE",
         "X-Api-Resource-Id": "volc.speech.dialog",  # 固定值
         "X-Api-App-Key": "PlgvMymc7f3tQnJ6",  # 固定值
         "X-Api-Connect-Id": str(uuid.uuid4()),

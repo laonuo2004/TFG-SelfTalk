@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, render_template, request
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 from werkzeug.utils import secure_filename
 import datetime
 import uuid
@@ -9,20 +9,22 @@ import threading
 import json
 import os
 import sys
+import base64
+import traceback
 
 import websockets
 from websockets.server import WebSocketServerProtocol
-import traceback
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(BASE_DIR, "python3.7"))
+# ============ 你自己的依赖 ============
+BASE_DIR_STR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(BASE_DIR_STR, "python3.7"))
 import config
 from realtime_dialog_client import RealtimeDialogClient
+
 
 app = Flask(__name__)
 
 # ================== 文件路径相关 ==================
-
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -91,318 +93,13 @@ def _json_success(payload: Dict[str, Any]):
     return response
 
 
-# ================== WebSocket 中继（火山 RealtimeDialog） ==================
-
-
-class DialogSession:
-    """
-    一条浏览器 WebSocket 连接对应一个火山对话会话。
-    """
-
-    def __init__(
-        self,
-        ws_config: Dict[str, Any],
-        output_audio_format: str = "pcm_s16le",
-        mod: str = "audio",
-        recv_timeout: int = 10,
-        expect_sample_rate: int = 16000,
-    ):
-        self.session_id = str(uuid.uuid4())
-        self.output_audio_format = output_audio_format
-        self.mod = mod
-        self.recv_timeout = recv_timeout
-        self.expect_sample_rate = expect_sample_rate
-
-        self.recording_enabled = False
-        # 20ms 一帧：16k * 0.02 * 2 bytes = 640 bytes（小于此丢掉，防止碎片太小）
-        self.min_chunk_bytes = 640
-
-        # 火山实时对话客户端（沿用你的现有实现）
-        # 支持一个可选的本地模拟模式（用于没有上游凭证时本地调试）
-        self.mock_upstream = bool(os.environ.get("MOCK_UPSTREAM", "") in ("1", "true", "yes"))
-        if not self.mock_upstream:
-            self.client = RealtimeDialogClient(
-                config=ws_config,
-                session_id=self.session_id,
-                output_audio_format=output_audio_format,
-                mod=mod,
-                recv_timeout=recv_timeout,
-            )
-        else:
-            self.client = None
-
-    def _generate_tone_pcm(self, freq: float = 440.0, duration: float = 0.4, sample_rate: int = 16000):
-        """生成单声道 16-bit PCM 的简单正弦波（little endian）。用于本地 mock 回放测试。"""
-        import math, array
-
-        total = int(sample_rate * duration)
-        arr = array.array('h')
-        for i in range(total):
-            t = i / sample_rate
-            v = int(0.5 * 32767 * math.sin(2 * math.pi * freq * t))
-            arr.append(v)
-        return arr.tobytes()
-
-    async def _send_json(self, websocket: WebSocketServerProtocol, obj: Dict[str, Any]):
-        try:
-            await websocket.send(json.dumps(obj, ensure_ascii=False))
-        except Exception as e:
-            print(f"[DialogSession] send_json error: {e}")
-
-    async def handle_server_response(
-        self, response: Dict[str, Any], websocket: WebSocketServerProtocol
-    ):
-        """
-        处理火山侧返回：
-        - SERVER_ACK：payload_msg 为 PCM 字节，直接二进制发给前端
-        - SERVER_FULL_RESPONSE：事件/文本，转成 JSON 文本下发
-        - SERVER_ERROR：错误转成 JSON
-        """
-        if not response:
-            return
-
-        msg_type = response.get("message_type")
-
-        if msg_type == "SERVER_ACK" and isinstance(
-            response.get("payload_msg"), (bytes, bytearray)
-        ):
-            await websocket.send(response["payload_msg"])
-
-        elif msg_type == "SERVER_FULL_RESPONSE":
-            await self._send_json(
-                websocket,
-                {
-                    "type": "event",
-                    "event": response.get("event"),
-                    "payload": response.get("payload_msg"),
-                },
-            )
-
-        elif msg_type == "SERVER_ERROR":
-            await self._send_json(
-                websocket,
-                {"type": "error", "message": str(response.get("payload_msg"))},
-            )
-            raise Exception(f"服务器错误：{response.get('payload_msg')}")
-
-    async def run(self, websocket: WebSocketServerProtocol):
-        print(f"[DialogSession] start session_id={self.session_id}")
-        try:
-            # 1) 建连火山
-            await self.client.connect()
-
-            # 2) 可选：打个招呼
-            try:
-                if hasattr(self.client, "say_hello"):
-                    await self.client.say_hello()
-            except Exception as e:
-                print(f"[DialogSession] say_hello failed: {e}")
-
-            # 前端→模型
-            async def frontend_to_model():
-                try:
-                    async for message in websocket:
-                        # 二进制：音频帧
-                        if isinstance(message, (bytes, bytearray)):
-                            if (
-                                self.recording_enabled
-                                and message
-                                and len(message) >= self.min_chunk_bytes
-                            ):
-                                # 如果处于 mock 模式，直接回送一段合成的 PCM 用于前端播放测试
-                                if self.mock_upstream:
-                                    try:
-                                        pcm = self._generate_tone_pcm()
-                                        await websocket.send(pcm)
-                                    except Exception as e:
-                                        print(f"[DialogSession] mock send pcm error: {e}")
-                                else:
-                                    await self.client.task_request(bytes(message))
-                            continue
-
-                        # 字符串：控制/文本
-                        text = (message or "").strip()
-                        obj = None
-                        try:
-                            obj = json.loads(text)
-                        except Exception:
-                            pass
-
-                        if isinstance(obj, dict) and obj.get("type") == "control":
-                            op = obj.get("op")
-                            if op == "start":
-                                self.recording_enabled = True
-                                await self._send_json(
-                                    websocket,
-                                    {"type": "control_ack", "op": "start"},
-                                )
-                            elif op == "stop":
-                                self.recording_enabled = False
-                                await self._send_json(
-                                    websocket,
-                                    {"type": "control_ack", "op": "stop"},
-                                )
-                            elif op == "text":
-                                q = (obj.get("text") or "").strip()
-                                if q:
-                                    await self.client.chat_text_query(q)
-                            else:
-                                await self._send_json(
-                                    websocket,
-                                    {
-                                        "type": "warn",
-                                        "message": f"未知操作: {op}",
-                                    },
-                                )
-                            continue
-
-                        # 兜底：当作纯文本 query
-                        if text:
-                            await self.client.chat_text_query(text)
-
-                except websockets.exceptions.ConnectionClosed:
-                    print(
-                        f"[DialogSession] websocket closed by frontend (send), session={self.session_id}"
-                    )
-                except Exception as e:
-                    print(f"[DialogSession] frontend_to_model error: {e}")
-
-            # 模型→前端
-            async def model_to_frontend():
-                try:
-                    # 如果为 mock 模式，周期性不从上游读取，而是发送模拟文本事件（覆盖真实交互）
-                    if self.mock_upstream:
-                        while True:
-                            await asyncio.sleep(0.6)
-                            # 发送一条模拟文本事件
-                            try:
-                                await self._send_json(
-                                    websocket,
-                                    {
-                                        "type": "event",
-                                        "event": "mock",
-                                        "payload": "这是来自本地模拟的回复",
-                                    },
-                                )
-                            except Exception as e:
-                                print(f"[DialogSession] mock send event error: {e}")
-                                break
-                    else:
-                        while True:
-                            response = await self.client.receive_server_response()
-                            await self.handle_server_response(response, websocket)
-                except websockets.exceptions.ConnectionClosed:
-                    print(
-                        f"[DialogSession] websocket closed by frontend (recv), session={self.session_id}"
-                    )
-                except asyncio.CancelledError:
-                    pass
-                except Exception as e:
-                    print(f"[DialogSession] model_to_frontend error: {e}")
-
-            # 并发跑
-            task_send = asyncio.create_task(frontend_to_model())
-            task_recv = asyncio.create_task(model_to_frontend())
-            done, pending = await asyncio.wait(
-                [task_send, task_recv], return_when=asyncio.FIRST_COMPLETED
-            )
-            for t in pending:
-                t.cancel()
-
-        finally:
-            print(
-                f"[DialogSession] closing RealtimeDialog session {self.session_id}"
-            )
-            # 顺序关闭
-            # 顺序关闭（仅在 client.ws 存在或方法内部安全时调用）
-            try:
-                ws_attr = getattr(self.client, 'ws', None)
-            except Exception:
-                ws_attr = None
-
-            if ws_attr:
-                for fn in (
-                    self.client.finish_session,
-                    self.client.finish_connection,
-                    self.client.close,
-                ):
-                    try:
-                        await fn()
-                    except Exception as e:
-                        print(f"[DialogSession] close error: {e}")
-            else:
-                # client 未成功建立到上游的 WebSocket，尝试仅调用 close()（防守式）
-                try:
-                    if hasattr(self.client, 'close'):
-                        await self.client.close()
-                except Exception as e:
-                    print(f"[DialogSession] close error (no ws): {e}")
-
-
-# WebSocket 入口
-async def ws_handler(websocket: WebSocketServerProtocol, path: str):
-    print(f"[WS] new frontend connection, path={path}")
-    session = DialogSession(
-        ws_config=config.ws_connect_config,
-        output_audio_format="pcm_s16le",
-        mod="audio",
-        recv_timeout=10,
-        expect_sample_rate=16000,
-    )
-    try:
-        await session.run(websocket)
-    except Exception as e:
-        # 打印完整堆栈到服务器日志，便于排查
-        tb = traceback.format_exc()
-        print(f"[WS] session error: {e}\n{tb}")
-        # 尝试发送结构化错误信息给前端，提醒原因
-        try:
-            err_obj = {"type": "error", "message": f"Server internal error: {str(e)}"}
-            await websocket.send(json.dumps(err_obj, ensure_ascii=False))
-        except Exception:
-            pass
-        try:
-            # 1011 表示服务器内部错误（Internal Error）
-            await websocket.close(code=1011, reason=str(e))
-        except Exception:
-            pass
-    finally:
-        print(f"[WS] frontend connection closed, path={path}")
-
-
-async def ws_main():
-    """
-    启动 WebSocket 中继服务器：
-    - 监听 0.0.0.0:6006（可按需改端口，对应 AutoDL 映射）
-    """
-    host, port = "0.0.0.0", 6006
-    server = await websockets.serve(
-        ws_handler,
-        host,
-        port,
-        max_size=4 * 1024 * 1024,
-        ping_interval=20,
-        ping_timeout=20,
-    )
-    print(f"[WS] relay server listening on {host}:{port}")
-    await server.wait_closed()
-
-
-def run_ws_server():
-    """在当前线程中阻塞运行 WebSocket 中继"""
-    asyncio.run(ws_main())
-
-
 # ================== Flask 路由 ==================
 
-
-# 首页
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
-# 模型训练页面 & 表单提交
 @app.route("/model_training", methods=["GET", "POST"])
 def model_training():
     if request.method == "POST":
@@ -424,16 +121,13 @@ def model_training():
     return render_template("model_training.html")
 
 
-# 视频生成页面 & 表单提交
 @app.route("/video_generation", methods=["GET", "POST"])
 def video_generation():
     if request.method == "POST":
         from backend.video_generator import generate_video
 
         payload = _build_payload_from_request()
-        audio_upload = request.files.get("ref_audio_file") or request.files.get(
-            "audio_file"
-        )
+        audio_upload = request.files.get("ref_audio_file") or request.files.get("audio_file")
         if audio_upload:
             payload["ref_audio"] = _save_uploaded_file(
                 audio_upload, AUDIO_UPLOAD_DIR, "refaudio"
@@ -448,7 +142,6 @@ def video_generation():
     return render_template("video_generation.html")
 
 
-# 人机对话页面 & 表单提交
 @app.route("/chat_system", methods=["GET", "POST"])
 def chat_system():
     if request.method == "POST":
@@ -470,7 +163,6 @@ def chat_system():
     return render_template("chat_system.html")
 
 
-# 录音上传接口（前端会用 fetch 调用）
 @app.route("/save_audio", methods=["POST"])
 def save_audio():
     audio_blob = request.files.get("audio")
@@ -500,24 +192,246 @@ def about():
     return render_template("about.html")
 
 
-# 新增路由：直接渲染模板文件 `实时对话.html`
 @app.route("/实时对话.html")
 def realtime_html():
     return render_template("实时对话.html")
 
 
-# ================== 启动入口 ==================
+# ================== 本地 WebSocket 网关 ==================
 
-if __name__ == "__main__":
-    # 1) 启动 WebSocket 中继（后台线程）
-    ws_thread = threading.Thread(
-        target=run_ws_server,
-        name="ws-relay-thread",
-        daemon=True,
+WS_HOST = "0.0.0.0"
+WS_PORT = 8765
+
+# 打开它会把上游原始包也透传到前端（调试用，默认关掉避免刷屏）
+DEBUG_UPSTREAM = False
+
+# --------- 工具：安全 JSON 化（仅用于 debug）---------
+def _jsonable(obj: Any) -> Any:
+    """把上游 dict 安全 JSON 化（bytes -> base64）。"""
+    if obj is None or isinstance(obj, (str, int, float, bool)):
+        return obj
+    if isinstance(obj, (bytes, bytearray)):
+        b = bytes(obj)
+        return {"__bytes_b64__": base64.b64encode(b).decode("utf-8"), "__len__": len(b)}
+    if isinstance(obj, dict):
+        return {k: _jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_jsonable(v) for v in obj]
+    return str(obj)
+
+
+# --------- 工具：从上游数据里“尽量”抽取音频 bytes ---------
+_AUDIO_KEYS = {"audio", "pcm", "tts", "tts_audio", "output_audio", "audio_bytes", "audio_data"}
+
+def _find_first_bytes(obj: Any, depth: int = 0, max_depth: int = 6) -> Optional[bytes]:
+    if depth > max_depth:
+        return None
+    if isinstance(obj, (bytes, bytearray)):
+        return bytes(obj)
+    if isinstance(obj, dict):
+        # 先按 key 优先找
+        for k in obj.keys():
+            if k in _AUDIO_KEYS:
+                v = obj.get(k)
+                if isinstance(v, (bytes, bytearray)):
+                    return bytes(v)
+        # 再递归找
+        for v in obj.values():
+            b = _find_first_bytes(v, depth + 1, max_depth)
+            if b:
+                return b
+    if isinstance(obj, (list, tuple)):
+        for v in obj:
+            b = _find_first_bytes(v, depth + 1, max_depth)
+            if b:
+                return b
+    return None
+
+
+# --------- 工具：从上游数据里“尽量”抽取文本 ---------
+_TEXT_KEYS = {"text", "transcript", "asr", "result", "content", "answer", "message"}
+_PARTIAL_HINT_KEYS = {"partial", "is_partial", "final", "is_final", "finished", "end"}
+
+def _find_first_text(obj: Any, depth: int = 0, max_depth: int = 6) -> Optional[str]:
+    if depth > max_depth:
+        return None
+    if isinstance(obj, str) and obj.strip():
+        return obj
+    if isinstance(obj, dict):
+        # 优先看常见 key
+        for k in obj.keys():
+            if k in _TEXT_KEYS:
+                v = obj.get(k)
+                if isinstance(v, str) and v.strip():
+                    return v.strip()
+        # 递归
+        for v in obj.values():
+            t = _find_first_text(v, depth + 1, max_depth)
+            if t:
+                return t
+    if isinstance(obj, (list, tuple)):
+        for v in obj:
+            t = _find_first_text(v, depth + 1, max_depth)
+            if t:
+                return t
+    return None
+
+
+def _guess_is_final(obj: Any) -> Optional[bool]:
+    """尽量判断是不是 final（不保证准确）"""
+    if not isinstance(obj, dict):
+        return None
+    for k in ("is_final", "final", "finished", "end"):
+        v = obj.get(k)
+        if isinstance(v, bool):
+            return v
+    # 有些协议会用数字/字符串
+    for k in ("event", "status", "type"):
+        v = obj.get(k)
+        if isinstance(v, (int, str)):
+            s = str(v).lower()
+            if "final" in s or "end" in s or s in {"2", "completed"}:
+                return True
+    return None
+
+
+async def ws_handler(websocket: WebSocketServerProtocol, path: str = ""):
+    """
+    浏览器 -> 本地WS -> RealtimeDialogClient -> VOLC
+    - 浏览器发送 JSON: {"type":"start"|"stop"|"text"}
+    - 浏览器发送 二进制: PCM S16LE 16k mono chunk
+    - 服务端发送 JSON: {type:"log"|"error"|"partial"|"asr"|"assistant"}
+    - 服务端发送 二进制: TTS PCM 16k s16le mono
+    """
+    session_id = uuid.uuid4().hex
+    client = RealtimeDialogClient(
+        config=config.ws_connect_config,
+        session_id=session_id,
+        output_audio_format="pcm_s16le",
+        mod="audio",
+        recv_timeout=30,
     )
-    ws_thread.start()
-    print("[MAIN] WebSocket relay started in background thread")
 
-    # 2) 启动 Flask（用 AutoDL 映射的另一个端口，比如 6008）
-    #    use_reloader=False 防止 debug 重载器起第二个进程导致 WS 端口冲突
+    async def send_json(obj: dict):
+        await websocket.send(json.dumps(obj, ensure_ascii=False))
+
+    recv_task = None
+    try:
+        await send_json({"type": "log", "message": f"ws connected, session_id={session_id}"})
+
+        # 连接上游
+        await client.connect()
+        await send_json({"type": "log", "message": "upstream connected"})
+
+        # 后台接收上游消息：抽取文本/音频 -> 发给前端
+        async def upstream_loop():
+            last_partial = ""
+            while True:
+                data = await client.receive_server_response()
+
+                # 1) 如果找到音频 bytes，直接二进制推给前端播放
+                audio_bytes = _find_first_bytes(data)
+                if audio_bytes:
+                    try:
+                        await websocket.send(audio_bytes)
+                    except Exception:
+                        # 前端断开就退出
+                        break
+
+                # 2) 抽取文本，尽量区分 partial / final
+                text = _find_first_text(data)
+                is_final = None
+                if isinstance(data, dict):
+                    is_final = _guess_is_final(data)
+
+                if text:
+                    # 避免 partial 同一句疯狂重复刷
+                    if is_final is False:
+                        if text != last_partial:
+                            last_partial = text
+                            await send_json({"type": "partial", "text": text})
+                    elif is_final is True:
+                        last_partial = ""
+                        await send_json({"type": "asr", "text": text})
+                    else:
+                        # 不确定 final：先当 partial（更符合实时体验）
+                        if text != last_partial:
+                            last_partial = text
+                            await send_json({"type": "partial", "text": text})
+
+                # 3) 调试：需要时再透传原始包（默认关闭，避免刷屏）
+                if DEBUG_UPSTREAM:
+                    await send_json({"type": "upstream", "data": _jsonable(data)})
+
+        recv_task = asyncio.create_task(upstream_loop())
+
+        # 处理来自浏览器的输入（音频/控制/文本）
+        async for msg in websocket:
+            if isinstance(msg, (bytes, bytearray)):
+                # 浏览器发来的二进制音频 chunk
+                await client.task_request(bytes(msg))
+                continue
+
+            # JSON 控制/文本
+            try:
+                payload = json.loads(msg)
+            except Exception:
+                await send_json({"type": "error", "message": f"invalid json: {str(msg)[:200]}"})
+                continue
+
+            t = payload.get("type")
+            if t == "start":
+                await send_json({"type": "log", "message": "recording start"})
+            elif t == "stop":
+                await send_json({"type": "log", "message": "recording stop"})
+            elif t == "text":
+                text = payload.get("text", "")
+                await send_json({"type": "log", "message": f"text -> upstream: {text[:50]}"})
+                await client.chat_text_query(text)
+            else:
+                await send_json({"type": "log", "message": f"unknown: {payload}"})
+
+    except websockets.exceptions.ConnectionClosed:
+        pass
+    except Exception as e:
+        traceback.print_exc()
+        try:
+            await send_json({"type": "error", "message": str(e)})
+        except Exception:
+            pass
+    finally:
+        try:
+            if recv_task:
+                recv_task.cancel()
+        except Exception:
+            pass
+        try:
+            await client.close()
+        except Exception:
+            pass
+
+
+async def _run_ws_server():
+    async with websockets.serve(
+        ws_handler,
+        WS_HOST,
+        WS_PORT,
+        max_size=10 * 1024 * 1024,
+        ping_interval=None,
+    ):
+        print(f"[WS] listening on ws://{WS_HOST}:{WS_PORT}")
+        await asyncio.Future()
+
+
+def run_ws_server():
+    """在后台线程运行 WS server（独立 event loop），不影响 Flask。"""
+    asyncio.run(_run_ws_server())
+
+
+# ================== 启动入口 ==================
+if __name__ == "__main__":
+    ws_thread = threading.Thread(target=run_ws_server, name="ws-gateway", daemon=True)
+    ws_thread.start()
+    print("[MAIN] WS gateway started")
+
     app.run(host="0.0.0.0", port=6008, debug=True, use_reloader=False)
