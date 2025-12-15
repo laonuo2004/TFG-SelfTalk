@@ -379,7 +379,7 @@
                 </div>
                 <h1 class="headline">模型训练界面 · <span>TRAIN</span></h1>
                 <p class="subline">
-                    配置参数 · 载入参考素材 · 启动 SelfTalk 模型训练流程
+                    配置参数 · 载入参考素材 · 启动 SyncTalk 模型训练流程
                 </p>
             </div>
 
@@ -399,7 +399,7 @@
                             <select name="model_choice">
                                 <option value="modelA">Model A</option>
                                 <option value="modelB">Model B</option>
-                                <option value="SelfTalk">SelfTalk</option>
+                                <option value="SyncTalk">SyncTalk</option>
                             </select>
                         </div>
 
@@ -419,11 +419,6 @@
                         <div class="form-group">
                             <label>Epoch（训练轮数）</label>
                             <input type="number" name="epoch" min="1" value="10">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>训练目标（train_subjects）</label>
-                            <input type="string"name="train_subjects" placeholder="请输入用于训练的subject">
                         </div>
 
                         <div class="form-group">
