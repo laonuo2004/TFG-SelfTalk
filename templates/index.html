@@ -343,8 +343,7 @@
                 </h1>
 
                 <p class="subline">
-                    面向企业与开发者的语音智能基础设施，集成模型训练、语音对话与视频生成能力，
-                    帮助你快速搭建稳定、自然、可扩展的人机交互系统。
+                    依托 SelfTalk 自监督交换训练框架，深耕 3D 说话人脸理解，打造全端智能交互落地系统。
                 </p>
 
                 <div class="hero-actions">
@@ -378,74 +377,13 @@
                     <span>Contact</span>
                 </div>
                 <div class="contact-list">
-                    <div><strong>商务合作</strong> bd@datahammer.example</div>
-                    <div><strong>技术支持</strong> support@datahammer.example</div>
+                    <div><strong>联系邮箱</strong> patrisam_wangyh@163.com</div>
+                    <div><strong>联系电话</strong> +86 18811600567</div>
                     <div><strong>Git / Demo</strong> 可根据需求开放 PoC 访问与技术文档</div>
                     <div><strong>合作模式</strong> 项目共建 · 私有化交付 · API 使用授权</div>
                 </div>
             </section>
         </div>
     </main>
-
-    <footer class="footer">
-        © 2025 DATA HAMMER LAB · All Rights Reserved
-    </footer>
-    <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.2/dist/umd/uuid.min.js"></script>
-    <script>
-        // 从 Flask 后端传递的 WebSocket 配置
-        const wsConfig = {{ ws_config|tojson }};
-        console.log(wsConfig);  // 输出配置以确保传递正确
-
-        // WebSocket 连接配置
-        const ws = new WebSocket(wsConfig.base_url);
-
-        // 在 WebSocket 连接成功时，发送配置信息到后端
-        ws.onopen = () => {
-            console.log("WebSocket连接成功！");
-            const startSessionReq = {
-                asr: {
-                    extra: {
-                        end_smooth_window_ms: 1500
-                    }
-                },
-                tts: {
-                    speaker: "zh_female_vv_jupiter_bigtts",
-                    audio_config: {
-                        channel: 1,
-                        format: "pcm",
-                        sample_rate: 24000
-                    }
-                },
-                dialog: {
-                    bot_name: "豆包",
-                    system_role: "你使用活泼灵动的女声，性格开朗，热爱生活。",
-                    speaking_style: "语速适中，语调自然。",
-                    location: { city: "北京" },
-                    extra: {
-                        strict_audit: false,
-                        audit_response: "支持客户自定义安全审核回复话术。",
-                        input_mod: "audio",
-                        model: "O"
-                    }
-                }
-            };
-            // 发送开始会话请求
-            ws.send(JSON.stringify(startSessionReq));
-        };
-
-        // 处理服务器的响应
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            console.log("Received message:", data);
-        };
-
-        ws.onerror = (error) => {
-            console.error("WebSocket 错误:", error);
-        };
-
-        ws.onclose = () => {
-            console.log("WebSocket 连接已关闭！");
-        };
-    </script>
 </body>
 </html>

@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>实时对话界面 - DATA HAMMER GROUP</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
     body { font-family: 'Microsoft YaHei', sans-serif; margin: 0; }
     body.main-bg {
@@ -168,9 +167,6 @@
           <div class="form-group">
             <label>WebSocket 网关地址（中转服务）</label>
             <input id="wsUrlInput" type="text" placeholder="">
-            <div class="small-hint">
-              默认使用 AutoDL 映射域名：wss://u811623-a935-f5308807.bjb1.seetacloud.com:8443/ws
-            </div>
           </div>
 
           <div class="form-group">
@@ -196,243 +192,284 @@
   </main>
 
   <footer class="footer">© 2025 DATA HAMMER LAB · Realtime Talking · All Rights Reserved</footer>
-
-  <script>
-    // ====== WebSocket + WebAudio 实时语音逻辑 ======
-    let ws = null, audioContext = null, micStream = null, processor = null;
-    let playQueue = [], isPlaying = false;
-
-    const statusDot = document.getElementById('statusDot');
-    const statusText = document.getElementById('statusText');
-    const latencyLabel = document.getElementById('latencyLabel');
-    const chatLog = document.getElementById('chatLog');
-    const wsUrlInput = document.getElementById('wsUrlInput');
-    const textInput = document.getElementById('textInput');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const sendTextBtn = document.getElementById('sendTextBtn');
-    const clearLogBtn = document.getElementById('clearLogBtn');
-
-    const SAMPLE_RATE = 16000;
-    const BUFFER_SIZE = 1024;
-
-    // 固定使用 AutoDL 的 WebSocket 域名（按你控制台实际域名改）
-    const WS_URL = "wss://u811623-a935-f5308807.bjb1.seetacloud.com:8443/ws";
-
-    function defaultWsUrl() {
-      return WS_URL;
-    }
-
-    window.addEventListener('load', () => {
-      if (!wsUrlInput) return;
-      wsUrlInput.value = WS_URL;
-      wsUrlInput.placeholder = WS_URL;
-    });
-
+  
+<script>
+    const $ = (id) => document.getElementById(id);
+  
+    const wsUrlInput = $("wsUrlInput");
+    const sendTextBtn = $("sendTextBtn");
+    const clearLogBtn = $("clearLogBtn");
+    const startBtn = $("startBtn");
+    const stopBtn = $("stopBtn");
+    const textInput = $("textInput");
+    const chatLog = $("chatLog");
+  
+    const statusDot = $("statusDot");
+    const statusText = $("statusText");
+    const latencyLabel = $("latencyLabel");
+  
+    let ws = null;
+    let wsReadyPromise = null;
+  
+    let audioCtx = null;
+    let micStream = null;
+    let sourceNode = null;
+    let processor = null;
+    let muteGain = null;
+    let running = false;
+  
+    const ttsQueue = [];
+    let ttsPlaying = false;
+  
     function setStatus(online, text) {
-      if (online) {
-        statusDot.classList.add('online');
-        statusText.textContent = text || '已连接';
-      } else {
-        statusDot.classList.remove('online');
-        statusText.textContent = text || '未连接';
-      }
+      statusDot.classList.toggle("online", !!online);
+      statusText.textContent = text;
     }
-
-    function appendMessage(role, content) {
-      const msg = document.createElement('div');
-      msg.className = 'chat-msg ' + role;
-      const roleSpan = document.createElement('span');
-      roleSpan.className = 'role';
-      roleSpan.textContent = role === 'user' ? '用户' : role === 'assistant' ? '模型' : '系统';
-      const contentSpan = document.createElement('span');
-      contentSpan.className = 'content';
-      contentSpan.textContent = content;
-      msg.appendChild(roleSpan);
-      msg.appendChild(contentSpan);
-      chatLog.appendChild(msg);
+  
+    function appendMsg(role, content) {
+      const div = document.createElement("div");
+      div.className = `chat-msg ${role}`;
+      div.innerHTML = `<span class="role">${role === "user" ? "用户" : role === "assistant" ? "助手" : "系统"}</span>
+                       <span class="content"></span>`;
+      div.querySelector(".content").textContent = content;
+      chatLog.appendChild(div);
       chatLog.scrollTop = chatLog.scrollHeight;
     }
+  
+    function getWsUrl() {
+      const manual = (wsUrlInput.value || "").trim();
+      if (manual) return manual;
 
-    // Float32 [-1,1] -> Int16 PCM
+  // 强制本机
+      return `ws://127.0.0.1:8765`;
+    }
+  
+    function waitWsOpen() {
+      if (!ws) return Promise.reject(new Error("ws not created"));
+      if (ws.readyState === WebSocket.OPEN) return Promise.resolve();
+      if (wsReadyPromise) return wsReadyPromise;
+  
+      wsReadyPromise = new Promise((resolve, reject) => {
+        const onOpen = () => { cleanup(); resolve(); };
+        const onErr = (e) => { cleanup(); reject(e); };
+        const onClose = () => { cleanup(); reject(new Error("ws closed")); };
+  
+        const cleanup = () => {
+          ws.removeEventListener("open", onOpen);
+          ws.removeEventListener("error", onErr);
+          ws.removeEventListener("close", onClose);
+          wsReadyPromise = null;
+        };
+  
+        ws.addEventListener("open", onOpen);
+        ws.addEventListener("error", onErr);
+        ws.addEventListener("close", onClose);
+      });
+  
+      return wsReadyPromise;
+    }
+  
+    function connectWS() {
+      const url = getWsUrl();
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        appendMsg("system", "WS 已连接/连接中");
+        return;
+      }
+  
+      ws = new WebSocket(url);
+      ws.binaryType = "arraybuffer";
+      wsReadyPromise = null;
+  
+      setStatus(false, "连接中…");
+      latencyLabel.textContent = "连接中…";
+  
+      ws.onopen = () => {
+        setStatus(true, "已连接");
+        latencyLabel.textContent = "已连接";
+        appendMsg("system", "WS open: " + url);
+      };
+  
+      ws.onclose = () => {
+        setStatus(false, "未连接");
+        latencyLabel.textContent = "连接关闭";
+        appendMsg("system", "WS closed.");
+      };
+  
+      ws.onerror = () => {
+        setStatus(false, "连接错误");
+        latencyLabel.textContent = "连接错误";
+        appendMsg("system", "WS error.");
+      };
+  
+      ws.onmessage = (evt) => {
+        if (typeof evt.data === "string") {
+          let msg;
+          try { msg = JSON.parse(evt.data); } catch { appendMsg("system", "JSON parse error"); return; }
+  
+          if (msg.type === "asr") appendMsg("assistant", "ASR: " + msg.text);
+          else if (msg.type === "partial") latencyLabel.textContent = "识别中… " + (msg.text || "");
+          else if (msg.type === "log") appendMsg("system", msg.message || "");
+          else if (msg.type === "error") appendMsg("system", "ERROR: " + (msg.message || ""));
+          else if (msg.type === "upstream") {
+            // 你后端目前是透传 parse_response：先显示摘要，方便你对齐字段
+            const s = JSON.stringify(msg.data);
+            appendMsg("system", "UPSTREAM: " + s.slice(0, 400));
+          } else {
+            appendMsg("system", "JSON: " + JSON.stringify(msg));
+          }
+          return;
+        }
+  
+        // 二进制：TTS PCM 16k s16le mono（如果后端推了）
+        enqueueTtsPcm(evt.data);
+      };
+    }
+  
+    // ===== 音频：重采样 + PCM16 =====
     function floatTo16BitPCM(float32Array) {
-      const buffer = new ArrayBuffer(float32Array.length * 2);
-      const view = new DataView(buffer);
+      const buf = new ArrayBuffer(float32Array.length * 2);
+      const view = new DataView(buf);
       for (let i = 0; i < float32Array.length; i++) {
         let s = Math.max(-1, Math.min(1, float32Array[i]));
         view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
       }
-      return buffer;
+      return buf;
     }
-
-    // 播放从服务器返回的 Int16 PCM
-    function playAudioQueue() {
-      if (!audioContext || playQueue.length === 0) { isPlaying = false; return; }
-      isPlaying = true;
-      const arrayBuffer = playQueue.shift();
+  
+    function resampleTo16k(float32Array, inRate) {
+      const outRate = 16000;
+      if (inRate === outRate) return float32Array;
+      const ratio = inRate / outRate;
+      const outLen = Math.round(float32Array.length / ratio);
+      const out = new Float32Array(outLen);
+      for (let i = 0; i < outLen; i++) {
+        const idx = i * ratio;
+        const i0 = Math.floor(idx);
+        const i1 = Math.min(i0 + 1, float32Array.length - 1);
+        const frac = idx - i0;
+        out[i] = float32Array[i0] * (1 - frac) + float32Array[i1] * frac;
+      }
+      return out;
+    }
+  
+    // ===== TTS 播放队列 =====
+    function enqueueTtsPcm(arrayBuffer) {
+      ttsQueue.push(arrayBuffer);
+      if (!ttsPlaying) playNextTts();
+    }
+  
+    async function playNextTts() {
+      if (ttsQueue.length === 0) { ttsPlaying = false; return; }
+      ttsPlaying = true;
+      const buf = ttsQueue.shift();
+      await playPcm16kS16LE(buf);
+      playNextTts();
+    }
+  
+    async function playPcm16kS16LE(arrayBuffer) {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") await audioCtx.resume();
+  
       const int16 = new Int16Array(arrayBuffer);
       const float32 = new Float32Array(int16.length);
-      for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 0x8000;
-
-      const buffer = audioContext.createBuffer(1, float32.length, SAMPLE_RATE);
-      buffer.copyToChannel(float32, 0);
-
-      const source = audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContext.destination);
-      source.onended = () => { playAudioQueue(); };
-      source.start();
+      for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
+  
+      const audioBuffer = audioCtx.createBuffer(1, float32.length, 16000);
+      audioBuffer.copyToChannel(float32, 0);
+  
+      return new Promise((resolve) => {
+        const node = audioCtx.createBufferSource();
+        node.buffer = audioBuffer;
+        node.connect(audioCtx.destination);
+        node.onended = resolve;
+        node.start();
+      });
     }
-
-    async function startDialog() {
-      if (ws) {
-        appendMessage('system', 'WebSocket 已连接，无需重复连接。');
-        return;
-      }
-      setStatus(false, '连接中...'); latencyLabel.textContent = '连接中...';
-
-      const url = wsUrlInput.value.trim() || WS_URL;
-      console.log('[WS URL used]', url);
-
-      try {
-        ws = new WebSocket(url);
-        ws.binaryType = 'arraybuffer';
-
-        ws.onopen = async () => {
-          setStatus(true, '已连接 · 语音准备中');
-          appendMessage('system', '已连接到中转服务：' + url);
-
-          ws.send(JSON.stringify({ type: 'control', op: 'start' }));
-
-          audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
-          micStream = await navigator.mediaDevices.getUserMedia({
-            audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-            video: false
-          });
-          const source = audioContext.createMediaStreamSource(micStream);
-          processor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
-          source.connect(processor);
-
-          // 将任意采样率的 Float32Array 下采样到目标采样率（简单线性平均）
-          function downsampleBuffer(buffer, srcRate, dstRate) {
-            if (dstRate === srcRate) return buffer;
-            const sampleRateRatio = srcRate / dstRate;
-            const newLength = Math.round(buffer.length / sampleRateRatio);
-            const result = new Float32Array(newLength);
-            let offsetResult = 0;
-            let offsetBuffer = 0;
-            while (offsetResult < newLength) {
-              const nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
-              let accum = 0, count = 0;
-              for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
-                accum += buffer[i];
-                count++;
-              }
-              result[offsetResult] = count > 0 ? accum / count : 0;
-              offsetResult++;
-              offsetBuffer = nextOffsetBuffer;
-            }
-            return result;
-          }
-
-          processor.onaudioprocess = (event) => {
-            const inputBuffer = event.inputBuffer.getChannelData(0);
-            const srcRate = audioContext.sampleRate || 48000;
-            let float32Samples = inputBuffer;
-            if (srcRate !== SAMPLE_RATE) {
-              float32Samples = downsampleBuffer(inputBuffer, srcRate, SAMPLE_RATE);
-            }
-            const pcmBuffer = floatTo16BitPCM(float32Samples);
-            if (ws && ws.readyState === WebSocket.OPEN) ws.send(pcmBuffer);
-          };
-
-          setStatus(true, '对话中'); latencyLabel.textContent = '推流中 · 正在实时对话';
-        };
-
-        ws.onmessage = (event) => {
-          if (event.data instanceof ArrayBuffer) {
-            playQueue.push(event.data);
-            if (!isPlaying) playAudioQueue();
-            return;
-          }
-          if (typeof event.data === 'string') {
-            try {
-              const obj = JSON.parse(event.data);
-              if (obj.type === 'event' && obj.payload) {
-                // payload 可能是文本或结构化内容
-                appendMessage('assistant', typeof obj.payload === 'string' ? obj.payload : JSON.stringify(obj.payload));
-                return;
-              } else if (obj.type === 'control_ack') {
-                appendMessage('system', `操作已确认: ${obj.op || ''}`);
-                return;
-              } else if (obj.type === 'error') {
-                appendMessage('system', `错误: ${obj.message || ''}`);
-                return;
-              }
-            } catch (e) {
-              // 非 JSON 字符串，作为纯文本显示
-            }
-            appendMessage('assistant', event.data);
-          }
-        };
-
-        ws.onclose = (e) => {
-          appendMessage('system', `WebSocket 已关闭 code=${e.code} reason=${e.reason||''}`);
-          setStatus(false, '连接已关闭'); latencyLabel.textContent = '连接已关闭';
-          cleanup();
-        };
-        ws.onerror = (e) => {
-          console.error('[WS error]', e);
-          appendMessage('system', 'WebSocket 连接错误（浏览器日志见控制台）');
-          setStatus(false, '连接错误'); latencyLabel.textContent = '连接错误';
-        };
-      } catch (e) {
-        console.error(e);
-        appendMessage('system', '建立连接失败：' + (e.message || e.toString()));
-        setStatus(false, '连接失败'); latencyLabel.textContent = '连接失败';
-        cleanup();
-      }
+  
+    // ===== MIC streaming =====
+    async function startMic() {
+      connectWS();
+      await waitWsOpen();
+  
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") await audioCtx.resume();
+  
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+  
+      sourceNode = audioCtx.createMediaStreamSource(micStream);
+      processor = audioCtx.createScriptProcessor(4096, 1, 1);
+  
+      muteGain = audioCtx.createGain();
+      muteGain.gain.value = 0;
+  
+      const inRate = audioCtx.sampleRate;
+      latencyLabel.textContent = `Mic OK · ${inRate} Hz`;
+  
+      processor.onaudioprocess = (e) => {
+        if (!running) return;
+        const input = e.inputBuffer.getChannelData(0);
+        const resampled = resampleTo16k(input, inRate);
+        const pcmBuf = floatTo16BitPCM(resampled);
+        if (ws && ws.readyState === WebSocket.OPEN) ws.send(pcmBuf);
+      };
+  
+      sourceNode.connect(processor);
+      processor.connect(muteGain);
+      muteGain.connect(audioCtx.destination);
+  
+      ws.send(JSON.stringify({ type: "start", format: "pcm_s16le", sample_rate: 16000, channels: 1 }));
+      running = true;
+      appendMsg("system", "语音已开始（持续推送麦克风）");
     }
-
-    function stopDialog() {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        try { ws.send(JSON.stringify({ type: 'control', op: 'stop' })); } catch {}
-        ws.close();
-      } else {
-        cleanup();
-        setStatus(false, '未连接'); latencyLabel.textContent = '已停止';
-      }
+  
+    function stopMic() {
+      running = false;
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "stop" }));
+  
+      if (processor) processor.disconnect();
+      if (sourceNode) sourceNode.disconnect();
+      if (muteGain) muteGain.disconnect();
+      if (micStream) micStream.getTracks().forEach(t => t.stop());
+  
+      processor = null;
+      sourceNode = null;
+      muteGain = null;
+      micStream = null;
+  
+      latencyLabel.textContent = "已停止";
+      appendMsg("system", "语音已停止");
     }
-
-    function cleanup() {
-      if (processor) { processor.disconnect(); processor.onaudioprocess = null; processor = null; }
-      if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-      if (audioContext) { audioContext.close(); audioContext = null; }
-      if (ws) ws = null;
-      playQueue = []; isPlaying = false;
-    }
-
-    function sendText() {
-      const text = textInput.value.trim();
+  
+    // ===== UI =====
+    startBtn.onclick = async () => {
+      try { await startMic(); }
+      catch (e) { appendMsg("system", "启动失败: " + e); }
+    };
+  
+    stopBtn.onclick = () => stopMic();
+  
+    sendTextBtn.onclick = async () => {
+      const text = (textInput.value || "").trim();
       if (!text) return;
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        appendMessage('system', '尚未连接 WebSocket，无法发送文本。');
-        return;
-      }
-      ws.send(text);
-      appendMessage('user', text);
-      textInput.value = '';
-    }
-
-    function clearLog() {
-      chatLog.innerHTML = '';
-    }
-
-    startBtn.addEventListener('click', startDialog);
-    stopBtn.addEventListener('click', stopDialog);
-    sendTextBtn.addEventListener('click', sendText);
-    clearLogBtn.addEventListener('click', clearLog);
-  </script>
-
-</body>
-</html>
+  
+      connectWS();
+      try { await waitWsOpen(); } catch { appendMsg("system", "WS 未连接"); return; }
+  
+      ws.send(JSON.stringify({ type: "text", text }));
+      appendMsg("user", text);
+      textInput.value = "";
+    };
+  
+    clearLogBtn.onclick = () => {
+      chatLog.innerHTML = "";
+      appendMsg("system", "已清空记录");
+    };
+  
+    // 默认填一个合理值（可改）
+    if (!wsUrlInput.value) wsUrlInput.value = "";
+  
+    setStatus(false, "未连接");
+</script>
+  
