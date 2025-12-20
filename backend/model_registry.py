@@ -167,19 +167,25 @@ def delete_model(name: str) -> bool:
     return False
 
 
-def get_models_for_dropdown() -> List[Dict[str, str]]:
+def get_models_for_dropdown() -> List[Dict[str, Any]]:
     """
     获取模型列表，供前端下拉选择使用。
     
     Returns:
-        模型列表，每个包含 value 和 label 字段
+        模型列表，包含完整信息以供前端展示
     """
     models = list_models()
     result = []
     for model in models:
         result.append({
-            "value": model.name,
+            "value": model.name,  # 实际上也是 model.name
             "label": f"{model.name} ({model.created_at})",
             "path": model.path,
+            "created_at": model.created_at,
+            "epochs": model.epochs,
+            "dataset": model.dataset,
+            "train_subjects": model.train_subjects,
+            "val_subjects": model.val_subjects,
+            "test_subjects": model.test_subjects,
         })
     return result
