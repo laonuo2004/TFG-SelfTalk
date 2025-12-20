@@ -183,6 +183,9 @@ def _launch_training_process(config: SelfTalkTrainConfig) -> None:
         "--device", config.gpu,
     ]
 
+    if config.test_subjects:
+        cmd.extend(["--test_subjects", config.test_subjects])
+
     print("\n[SelfTalk] 执行命令：")
     print(" ".join(cmd))
     print("--------------------------------------------------\n")
