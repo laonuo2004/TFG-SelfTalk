@@ -3,11 +3,149 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>模型训练界面 - DATA HAMMER GROUP</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-
+    <title>模型训练界面 - SelfTalk</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
+    <style>
+        /* 多选下拉样式 */
+        .multi-select-container {
+            position: relative;
+        }
+
+        .multi-select-dropdown {
+            max-height: 140px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(20, 20, 40, 0.9);
+            padding: 6px;
+            margin-top: 4px;
+        }
+
+        .multi-select-item {
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .multi-select-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .multi-select-item input[type="checkbox"] {
+            margin-right: 10px;
+            accent-color: #6366f1;
+        }
+
+        .multi-select-item.group-header {
+            font-size: 0.85em;
+            color: #888;
+            padding-top: 10px;
+            cursor: default;
+        }
+
+        .multi-select-item.group-header:hover {
+            background: transparent;
+        }
+
+        /* 模型名称（可选） */
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        /* 模型管理面板样式 */
+        .model-management-panel {
+            background: rgba(20, 20, 40, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            height: 100%;
+        }
+
+        .panel-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        .model-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .model-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 3px solid #6366f1;
+        }
+
+        .model-item .model-name {
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .model-item .model-meta {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .model-item .model-actions {
+            margin-top: 8px;
+        }
+
+        .model-item .btn-delete {
+            font-size: 0.8em;
+            color: #ef4444;
+            cursor: pointer;
+        }
+
+        .model-item .btn-delete:hover {
+            text-decoration: underline;
+        }
+
+        /* 训练进度面板 */
+        .training-progress {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .training-progress.active {
+            display: block;
+        }
+
+        .progress-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .log-output {
+            background: #0a0a0a;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.85em;
+            max-height: 200px;
+            overflow-y: auto;
+            color: #0f0;
+        }
+
+        .video-display {
+            flex: 1.6 !important;
+        }
+
+        .model-management-panel {
+            width: 80%;
+        }
+    </style>
 </head>
 
 <body class="main-bg">
@@ -16,7 +154,7 @@
         <div class="nav-logo">
             <div class="nav-logo-mark"></div>
             <div>
-                <div class="nav-logo-text-main">DATA HAMMER GROUP</div>
+                <div class="nav-logo-text-main">SelfTalk Training</div>
                 <div class="nav-logo-text-sub">Intelligent Talking System</div>
             </div>
         </div>
@@ -40,28 +178,30 @@
             <div class="hero-card">
                 <div class="badge">
                     <div class="badge-dot"></div>
-                    <span>MODEL · DATA HAMMER TALKING SYSTEM</span>
+                    <span>MODEL · SELFTALK TRAINING SYSTEM</span>
                 </div>
                 <h1 class="headline">模型训练界面 · <span>TRAIN</span></h1>
                 <p class="subline">
-                    配置参数 · 载入参考素材 · 启动 SelfTalk 模型训练流程
+                    配置训练参数 · 选择训练数据 · 启动 SelfTalk 模型训练
                 </p>
             </div>
 
             <div class="video-page-container">
-                <!-- 左侧：训练结果 / 参考视频显示 -->
-                <div class="video-display">
-                    <video id="trainVideo" controls width="420">
-                        <source src="{{ url_for('static', filename='videos/sample.mp4') }}" type="video/mp4">
-                    </video>
+                <!-- 左侧：模型管理面板 -->
+                <div class="video-display" style="min-width: 400px;">
+                    <div class="model-management-panel">
+                        <div class="panel-title">📦 已训练模型</div>
+                        <div class="model-list" id="modelList">
+                            <div style="color: #888; text-align: center; padding: 20px;">
+                                加载中...
+                            </div>
+                        </div>
 
-                    <!-- 新增：音量控制区域 -->
-                    <div class="volume-control">
-                        <label for="volumeSlider">视频音量</label>
-                        <div class="volume-slider-wrapper">
-                            <span class="volume-icon">🔊</span>
-                            <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1">
-                            <span class="volume-value" id="volumeValue">100%</span>
+                        <div class="training-progress" id="trainingProgress">
+                            <div class="progress-title">🚀 训练中...</div>
+                            <div class="log-output" id="logOutput">
+                                等待训练开始...
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -69,39 +209,48 @@
                 <!-- 右侧：训练参数表单 -->
                 <div class="form-section">
                     <form id="trainForm">
+                        <!-- 模型名称（可选） -->
                         <div class="form-group">
-                            <label>模型选择</label>
-                            <select name="model_choice">
-                                <option value="modelA">Model A</option>
-                                <option value="modelB">Model B</option>
-                                <option value="SelfTalk">SelfTalk</option>
+                            <label>模型名称（可选，留空自动生成）</label>
+                            <input type="text" name="model_name" placeholder="例如：我的第一个模型">
+                        </div>
+
+                        <!-- 设备选择 -->
+                        <div class="form-group">
+                            <label>选择设备</label>
+                            <select name="device" id="deviceSelect">
+                                <option value="cpu">加载中...</option>
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label>GPU 选择</label>
-                            <select name="gpu_choice">
-                                <option value="GPU0">GPU 0</option>
-                                <option value="GPU1">GPU 1</option>
-                            </select>
-                        </div>
-
+                        <!-- Epoch -->
                         <div class="form-group">
                             <label>Epoch（训练轮数）</label>
                             <input type="number" name="epoch" min="1" value="10">
                         </div>
 
-                        <div class="form-group">
-                            <label>训练目标（train_subjects）</label>
-                            <input type="text" name="train_subjects" placeholder="请输入用于训练的subject">
+                        <!-- 训练集 Subject（多选） -->
+                        <div class="form-group multi-select-container">
+                            <label>训练集 Subject（建议选择 6-8 个）</label>
+                            <div class="multi-select-dropdown" id="trainSubjectsDropdown"></div>
+                            <input type="hidden" name="train_subjects" id="trainSubjectsInput">
                         </div>
 
-                        <div class="form-group">
-                            <label>自定义训练参数</label>
-                            <textarea name="custom_params" placeholder="请输入自定义参数..."></textarea>
+                        <!-- 验证集 Subject（多选） -->
+                        <div class="form-group multi-select-container">
+                            <label>验证集 Subject（建议选择 2 个）</label>
+                            <div class="multi-select-dropdown" id="valSubjectsDropdown"></div>
+                            <input type="hidden" name="val_subjects" id="valSubjectsInput">
                         </div>
 
-                        <button type="submit" class="generate-btn">🚀 开始训练</button>
+                        <!-- 测试集 Subject（多选，可选） -->
+                        <div class="form-group multi-select-container">
+                            <label>测试集 Subject（可选）</label>
+                            <div class="multi-select-dropdown" id="testSubjectsDropdown"></div>
+                            <input type="hidden" name="test_subjects" id="testSubjectsInput">
+                        </div>
+
+                        <button type="submit" class="generate-btn" id="trainBtn">🚀 开始训练</button>
                     </form>
                 </div>
             </div>
@@ -109,77 +258,203 @@
     </main>
 
     <footer class="footer">
-        © 2025 DATA HAMMER LAB · All Rights Reserved
+        © 2025 SelfTalk Training System · All Rights Reserved
     </footer>
 
     <script>
-        // 新增：音量控制逻辑
-        const videoEl = document.getElementById('trainVideo');
-        const volumeSlider = document.getElementById('volumeSlider');
-        const volumeValue = document.getElementById('volumeValue');
+        // ============ 全局变量 ============
+        let allSubjects = [];
+        let selectedTrainSubjects = [];
+        let selectedValSubjects = [];
+        let selectedTestSubjects = [];
 
-        // 初始化音量显示
-        volumeValue.textContent = `${Math.round(volumeSlider.value * 100)}%`;
-
-        // 滑块改变时更新音量
-        volumeSlider.addEventListener('input', function() {
-            // 设置视频音量（0-1之间）
-            videoEl.volume = this.value;
-            // 更新音量百分比显示
-            volumeValue.textContent = `${Math.round(this.value * 100)}%`;
-            
-            // 根据音量切换图标
-            const volumeIcon = document.querySelector('.volume-icon');
-            if (this.value == 0) {
-                volumeIcon.textContent = '🔇';
-            } else if (this.value < 0.5) {
-                volumeIcon.textContent = '🔈';
-            } else {
-                volumeIcon.textContent = '🔊';
-            }
+        // ============ 初始化 ============
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDevices();
+            loadSubjects();
+            loadModels();
         });
 
-        // 视频音量变化时同步滑块（比如用户用视频自带控件调节）
-        videoEl.addEventListener('volumechange', function() {
-            volumeSlider.value = this.volume;
-            volumeValue.textContent = `${Math.round(this.volume * 100)}%`;
-            
-            const volumeIcon = document.querySelector('.volume-icon');
-            if (this.volume == 0) {
-                volumeIcon.textContent = '🔇';
-            } else if (this.volume < 0.5) {
-                volumeIcon.textContent = '🔈';
-            } else {
-                volumeIcon.textContent = '🔊';
+        // ============ 加载设备列表 ============
+        async function loadDevices() {
+            try {
+                const res = await fetch('/api/devices');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    const select = document.getElementById('deviceSelect');
+                    select.innerHTML = '';
+                    data.devices.forEach(device => {
+                        const opt = document.createElement('option');
+                        opt.value = device.value;
+                        opt.textContent = device.label;
+                        if (device.value === data.default) {
+                            opt.selected = true;
+                        }
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error('加载设备列表失败:', err);
             }
-        });
-        document.getElementById('trainForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
+        }
 
-            // 立即从表单获取视频路径并播放
-            const refVideoPath = formData.get('ref_video');
-            const videoEl = document.getElementById('trainVideo');
+        // ============ 加载 Subject 列表 ============
+        async function loadSubjects() {
+            try {
+                const res = await fetch('/api/subjects');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    allSubjects = data.subjects;
+                    const defaults = data.defaults;
 
-            if (refVideoPath) {
-                // 立即设置视频源并播放
-                const newSrc = "/" + refVideoPath.replace("\\", "/") + '?t=' + new Date().getTime();
-                videoEl.src = newSrc;
-                videoEl.load();
-                videoEl.play().catch(e => console.log('自动播放可能被阻止:', e));
+                    // 设置默认选中
+                    selectedTrainSubjects = [...defaults.train];
+                    selectedValSubjects = [...defaults.val];
+                    selectedTestSubjects = [...defaults.test];
+
+                    // 渲染多选列表
+                    renderMultiSelect('trainSubjects', allSubjects, selectedTrainSubjects);
+                    renderMultiSelect('valSubjects', allSubjects, selectedValSubjects);
+                    renderMultiSelect('testSubjects', allSubjects, selectedTestSubjects);
+                }
+            } catch (err) {
+                console.error('加载 Subject 列表失败:', err);
             }
+        }
 
-            fetch('/model_training', {
-                method: 'POST',
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        alert('训练完成！');
+        // ============ 渲染多选组件 ============
+        function renderMultiSelect(prefix, subjects, selectedList) {
+            const dropdown = document.getElementById(prefix + 'Dropdown');
+            const hiddenInput = document.getElementById(prefix + 'Input');
+
+            dropdown.innerHTML = '';
+            subjects.forEach(subject => {
+                const item = document.createElement('div');
+                item.className = 'multi-select-item';
+                const isChecked = selectedList.includes(subject.value);
+                item.innerHTML = `
+                    <input type="checkbox" id="${prefix}_${subject.value}" 
+                           ${isChecked ? 'checked' : ''} 
+                           data-value="${subject.value}">
+                    <label for="${prefix}_${subject.value}">${subject.label}</label>
+                `;
+                item.querySelector('input').addEventListener('change', function () {
+                    if (this.checked) {
+                        if (!selectedList.includes(subject.value)) {
+                            selectedList.push(subject.value);
+                        }
+                    } else {
+                        const idx = selectedList.indexOf(subject.value);
+                        if (idx > -1) selectedList.splice(idx, 1);
                     }
-                })
-                .catch(err => console.error('错误:', err));
+                    updateTags(prefix, selectedList);
+                });
+                dropdown.appendChild(item);
+            });
+
+            updateTags(prefix, selectedList);
+        }
+
+        // ============ 更新选中状态 ============
+        function updateTags(prefix, selectedList) {
+            const hiddenInput = document.getElementById(prefix + 'Input');
+            // 更新隐藏输入
+            hiddenInput.value = selectedList.join(' ');
+        }
+
+        // ============ 加载已训练模型 ============
+        async function loadModels() {
+            try {
+                const res = await fetch('/api/models');
+                const data = await res.json();
+                const container = document.getElementById('modelList');
+
+                if (data.status === 'success' && data.models.length > 0) {
+                    container.innerHTML = '';
+                    data.models.forEach(model => {
+                        const item = document.createElement('div');
+                        item.className = 'model-item';
+                        item.innerHTML = `
+                            <div class="model-name">${model.label}</div>
+                            <div class="model-meta">路径: ${model.path}</div>
+                            <div class="model-actions">
+                                <span class="btn-delete" data-name="${model.value}">删除</span>
+                            </div>
+                        `;
+                        item.querySelector('.btn-delete').addEventListener('click', async function () {
+                            if (confirm('确定要删除这个模型记录吗？（不会删除实际文件）')) {
+                                await deleteModel(this.dataset.name);
+                            }
+                        });
+                        container.appendChild(item);
+                    });
+                } else {
+                    container.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">暂无已训练模型</div>';
+                }
+            } catch (err) {
+                console.error('加载模型列表失败:', err);
+            }
+        }
+
+        // ============ 删除模型 ============
+        async function deleteModel(name) {
+            try {
+                const res = await fetch('/api/models', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    loadModels();
+                } else {
+                    alert('删除失败: ' + data.message);
+                }
+            } catch (err) {
+                console.error('删除模型失败:', err);
+            }
+        }
+
+        // ============ 提交训练表单 ============
+        document.getElementById('trainForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const trainBtn = document.getElementById('trainBtn');
+            const progressPanel = document.getElementById('trainingProgress');
+            const logOutput = document.getElementById('logOutput');
+
+            // 显示进度面板
+            progressPanel.classList.add('active');
+            trainBtn.disabled = true;
+            trainBtn.textContent = '⏳ 训练中...';
+            logOutput.textContent = '正在启动训练...\n';
+
+            try {
+                const res = await fetch('/model_training', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    logOutput.textContent += '✅ 训练完成！\n';
+                    if (data.artifacts && data.artifacts.model_name) {
+                        logOutput.textContent += `📦 模型已注册: ${data.artifacts.model_name}\n`;
+                    }
+                    alert('训练完成！');
+                    loadModels(); // 刷新模型列表
+                } else {
+                    logOutput.textContent += `❌ 训练失败: ${data.message}\n`;
+                    alert('训练失败: ' + data.message);
+                }
+            } catch (err) {
+                logOutput.textContent += `❌ 错误: ${err}\n`;
+                console.error('训练请求失败:', err);
+            } finally {
+                trainBtn.disabled = false;
+                trainBtn.textContent = '🚀 开始训练';
+            }
         });
     </script>
 </body>

@@ -243,19 +243,37 @@ def _train_selftalk_pipeline(payload: TrainingPayload) -> Dict[str, Any]:
 
     # dataset_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../SelfTalk", payload.dataset, "wav"))
 
+    # 预处理 subjects (可能是字符串或列表)
+    def to_list(subjects):
+        if not subjects:
+            return []
+        if isinstance(subjects, str):
+            # 处理逗号或空格分隔
+            return [s.strip() for s in subjects.replace(',', ' ').split() if s.strip()]
+        return subjects
+
+    train_subjects_list = to_list(payload.train_subjects)
+    val_subjects_list = to_list(payload.val_subjects)
+
     # 检查音频文件是否存在
-    train_files = [f for f in os.listdir(dataset_root) if f.startswith(payload.train_subjects)]
-    val_files = [f for f in os.listdir(dataset_root) if f.startswith(payload.val_subjects)]
+    # 文件名通常是 Subject_Name_sentenceXX.wav，所以检查是否以 subject 开头即可
+    train_files = []
+    val_files = []
+    
+    if os.path.exists(dataset_root):
+        all_files = os.listdir(dataset_root)
+        train_files = [f for f in all_files if any(f.startswith(subj) for subj in train_subjects_list)]
+        val_files = [f for f in all_files if any(f.startswith(subj) for subj in val_subjects_list)]
 
     if not train_files:
         return {
             "status": "failed",
-            "message": f"未找到训练文件，检查前缀：{payload.train_subjects} 在 {dataset_root}"
+            "message": f"未找到训练文件。请检查路径：{dataset_root}。预期包含以下 Subject 的文件：{train_subjects_list}"
         }
     if not val_files:
         return {
             "status": "failed",
-            "message": f"验证音频文件缺失，请检查路径：{dataset_root}, 前缀：{payload.val_subjects}"
+            "message": f"未找到验证文件。请检查路径：{dataset_root}。预期包含以下 Subject 的文件：{val_subjects_list}"
         }
 
     print(f"[SelfTalk] 训练集文件数：{len(train_files)}，验证集文件数：{len(val_files)}")

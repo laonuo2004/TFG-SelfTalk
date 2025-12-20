@@ -17,7 +17,10 @@ from websockets.server import WebSocketServerProtocol
 
 # ============ 你自己的依赖 ============
 BASE_DIR_STR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(BASE_DIR_STR, "python3.7"))
+PYTHON37_PATH = os.path.join(BASE_DIR_STR, "python3.7")
+if PYTHON37_PATH not in sys.path:
+    sys.path.insert(0, PYTHON37_PATH)
+
 import config
 from realtime_dialog_client import RealtimeDialogClient
 
@@ -185,6 +188,107 @@ def save_audio():
             "url": _relative_static_url(target_path),
         }
     )
+
+
+# ================== API 路由（供前端调用）==================
+
+@app.route("/api/devices", methods=["GET"])
+def api_devices():
+    """获取可用的计算设备列表。"""
+    from backend.device_utils import get_available_devices, get_default_device
+    
+    devices = get_available_devices()
+    default_device = get_default_device()
+    
+    return _json_success({
+        "status": "success",
+        "devices": devices,
+        "default": default_device,
+    })
+
+
+@app.route("/api/subjects", methods=["GET"])
+def api_subjects():
+    """获取可用的 subject 列表。"""
+    from backend.device_utils import get_subjects_list, get_default_subjects
+    
+    subjects = get_subjects_list()
+    defaults = get_default_subjects()
+    
+    return _json_success({
+        "status": "success",
+        "subjects": subjects,
+        "defaults": defaults,
+    })
+
+
+@app.route("/api/models", methods=["GET", "POST", "DELETE"])
+def api_models():
+    """模型管理 API。"""
+    from backend.model_registry import (
+        list_models, register_model, delete_model, get_models_for_dropdown
+    )
+    
+    if request.method == "GET":
+        # 获取模型列表
+        models = get_models_for_dropdown()
+        return _json_success({
+            "status": "success",
+            "models": models,
+        })
+    
+    elif request.method == "POST":
+        # 注册新模型
+        payload = _build_payload_from_request()
+        
+        required_fields = ["path", "epochs", "dataset", "train_subjects", "val_subjects"]
+        for field in required_fields:
+            if field not in payload:
+                return _json_error(f"缺少必填字段: {field}")
+        
+        try:
+            # 处理 subjects 字段（可能是逗号分隔的字符串或列表）
+            train_subjects = payload["train_subjects"]
+            val_subjects = payload["val_subjects"]
+            test_subjects = payload.get("test_subjects", [])
+            
+            if isinstance(train_subjects, str):
+                train_subjects = [s.strip() for s in train_subjects.split(",") if s.strip()]
+            if isinstance(val_subjects, str):
+                val_subjects = [s.strip() for s in val_subjects.split(",") if s.strip()]
+            if isinstance(test_subjects, str):
+                test_subjects = [s.strip() for s in test_subjects.split(",") if s.strip()]
+            
+            model = register_model(
+                path=payload["path"],
+                epochs=int(payload["epochs"]),
+                dataset=payload["dataset"],
+                train_subjects=train_subjects,
+                val_subjects=val_subjects,
+                test_subjects=test_subjects,
+                name=payload.get("name"),  # 可选
+            )
+            
+            return _json_success({
+                "status": "success",
+                "message": "模型注册成功",
+                "model": model.to_dict(),
+            })
+        except Exception as exc:
+            return _json_error(f"模型注册失败: {exc}")
+    
+    elif request.method == "DELETE":
+        # 删除模型
+        payload = _build_payload_from_request()
+        name = payload.get("name")
+        if not name:
+            return _json_error("缺少模型名称")
+        
+        success = delete_model(name)
+        if success:
+            return _json_success({"status": "success", "message": "模型已删除"})
+        else:
+            return _json_error("模型不存在")
 
 
 @app.route("/about")
@@ -434,4 +538,4 @@ if __name__ == "__main__":
     ws_thread.start()
     print("[MAIN] WS gateway started")
 
-    app.run(host="0.0.0.0", port=6008, debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=6009, debug=True, use_reloader=False)

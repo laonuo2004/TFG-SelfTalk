@@ -3,9 +3,56 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>视频生成界面 - DATA HAMMER GROUP</title>
+    <title>视频生成界面 - SelfTalk</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* 文件上传样式 */
+        .file-upload-area {
+            border: 2px dashed rgba(99, 102, 241, 0.5);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .file-upload-area:hover {
+            border-color: rgba(99, 102, 241, 0.8);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .file-upload-area.has-file {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .file-upload-area .upload-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .file-upload-area .upload-text {
+            color: #888;
+        }
+
+        .file-upload-area .file-name {
+            color: #10b981;
+            font-weight: bold;
+            word-break: break-all;
+        }
+
+        .file-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .audio-hint {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 8px;
+        }
+    </style>
 </head>
 
 <body class="main-bg">
@@ -14,7 +61,7 @@
         <div class="nav-logo">
             <div class="nav-logo-mark"></div>
             <div>
-                <div class="nav-logo-text-main">DATA HAMMER GROUP</div>
+                <div class="nav-logo-text-main">SelfTalk Video</div>
                 <div class="nav-logo-text-sub">Intelligent Talking System</div>
             </div>
         </div>
@@ -38,11 +85,11 @@
             <div class="hero-card">
                 <div class="badge">
                     <div class="badge-dot"></div>
-                    <span>VIDEO · DATA HAMMER TALKING SYSTEM</span>
+                    <span>VIDEO · SELFTALK GENERATION</span>
                 </div>
                 <h1 class="headline">视频生成界面 · <span>VIDEO GENERATION</span></h1>
                 <p class="subline">
-                    选择模型与素材，一键生成口型、表情同步的视频内容
+                    选择模型与音频，一键生成口型同步的说话视频
                 </p>
             </div>
 
@@ -53,7 +100,6 @@
                         <source src="{{ url_for('static', filename='videos/sample.mp4') }}" type="video/mp4">
                     </video>
 
-                    <!-- 音量控制区域（移到video-display内，布局更合理） -->
                     <div class="volume-control">
                         <label for="volumeSlider">视频音量</label>
                         <div class="volume-slider-wrapper">
@@ -66,45 +112,45 @@
 
                 <!-- 右边输入表单 -->
                 <div class="form-section">
-                    <form id="videoForm">
+                    <form id="videoForm" enctype="multipart/form-data">
+                        <!-- 选择模型 -->
                         <div class="form-group">
-                            <label>模型名称</label>
-                            <select name="model_name">
-                                <option value="model1">Model 1</option>
-                                <option value="model2">Model 2</option>
-                                <option value="SelfTalk">SelfTalk</option>
+                            <label>选择模型</label>
+                            <select name="model_name" id="modelSelect">
+                                <option value="">加载中...</option>
+                            </select>
+                            <div class="audio-hint">请先在"模型训练"页面训练模型</div>
+                        </div>
+
+                        <!-- 设备选择 -->
+                        <div class="form-group">
+                            <label>选择设备</label>
+                            <select name="device" id="deviceSelect">
+                                <option value="cpu">加载中...</option>
                             </select>
                         </div>
 
+                        <!-- 音频上传 -->
                         <div class="form-group">
-                            <label>模型目录地址</label>
-                            <input type="text" name="model_param" placeholder="请输入模型目录路径">
+                            <label>上传驱动音频 (.wav)</label>
+                            <div class="file-upload-area" id="audioUploadArea">
+                                <div class="upload-icon">🎵</div>
+                                <div class="upload-text">点击选择音频文件</div>
+                                <div class="file-name" id="audioFileName" style="display: none;"></div>
+                                <input type="file" name="ref_audio_file" id="audioFileInput" accept=".wav">
+                            </div>
+                            <div class="audio-hint">建议音频时长不超过 30 秒，格式为 .wav</div>
                         </div>
 
+                        <!-- Subject 选择 -->
                         <div class="form-group">
-                            <label>参考音频地址</label>
-                            <input type="text" name="ref_audio" placeholder="请输入音频路径">
-                        </div>
-
-                        <div class="form-group">
-                            <label>模型目录路径</label>
-                            <input type="text" name="model_path" placeholder="请输入模型目录路径">
-                        </div>
-
-                        <div class="form-group">
-                            <label>GPU 选择</label>
-                            <select name="gpu_choice">
-                                <option value="GPU0">GPU 0</option>
-                                <option value="GPU1">GPU 1</option>
+                            <label>人脸模板 (Subject)</label>
+                            <select name="subject" id="subjectSelect">
+                                <option value="">加载中...</option>
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label>目标文字（文本框）</label>
-                            <textarea name="target_text" placeholder="留空则直接使用参考音频"></textarea>
-                        </div>
-
-                        <button type="submit" class="generate-btn">🎬 生成视频</button>
+                        <button type="submit" class="generate-btn" id="generateBtn">🎬 生成视频</button>
                     </form>
                 </div>
             </div>
@@ -112,78 +158,170 @@
     </main>
 
     <footer class="footer">
-        © 2025 DATA HAMMER LAB · All Rights Reserved
+        © 2025 SelfTalk Video Generation · All Rights Reserved
     </footer>
 
     <script>
-        // 新增：音量控制逻辑
+        // ============ 初始化 ============
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDevices();
+            loadModels();
+            loadSubjects();
+            setupFileUpload();
+        });
+
+        // ============ 加载设备列表 ============
+        async function loadDevices() {
+            try {
+                const res = await fetch('/api/devices');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    const select = document.getElementById('deviceSelect');
+                    select.innerHTML = '';
+                    data.devices.forEach(device => {
+                        const opt = document.createElement('option');
+                        opt.value = device.value;
+                        opt.textContent = device.label;
+                        if (device.value === data.default) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error('加载设备列表失败:', err);
+            }
+        }
+
+        // ============ 加载模型列表 ============
+        async function loadModels() {
+            try {
+                const res = await fetch('/api/models');
+                const data = await res.json();
+                const select = document.getElementById('modelSelect');
+
+                if (data.status === 'success' && data.models.length > 0) {
+                    select.innerHTML = '';
+                    data.models.forEach(model => {
+                        const opt = document.createElement('option');
+                        opt.value = model.value;
+                        opt.dataset.path = model.path;
+                        opt.textContent = model.label;
+                        select.appendChild(opt);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">暂无可用模型，请先训练</option>';
+                }
+            } catch (err) {
+                console.error('加载模型列表失败:', err);
+            }
+        }
+
+        // ============ 加载 Subject 列表 ============
+        async function loadSubjects() {
+            try {
+                const res = await fetch('/api/subjects');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    const select = document.getElementById('subjectSelect');
+                    select.innerHTML = '';
+                    data.subjects.forEach(subject => {
+                        const opt = document.createElement('option');
+                        opt.value = subject.value;
+                        opt.textContent = subject.label;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error('加载 Subject 列表失败:', err);
+            }
+        }
+
+        // ============ 文件上传处理 ============
+        function setupFileUpload() {
+            const uploadArea = document.getElementById('audioUploadArea');
+            const fileInput = document.getElementById('audioFileInput');
+            const fileName = document.getElementById('audioFileName');
+            const uploadText = uploadArea.querySelector('.upload-text');
+
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            fileInput.addEventListener('change', function () {
+                if (this.files.length > 0) {
+                    const file = this.files[0];
+                    if (!file.name.toLowerCase().endsWith('.wav')) {
+                        alert('请上传 .wav 格式的音频文件');
+                        this.value = '';
+                        return;
+                    }
+                    fileName.textContent = file.name;
+                    fileName.style.display = 'block';
+                    uploadText.style.display = 'none';
+                    uploadArea.classList.add('has-file');
+                }
+            });
+        }
+
+        // ============ 音量控制 ============
         const videoEl = document.getElementById('outputVideo');
         const volumeSlider = document.getElementById('volumeSlider');
         const volumeValue = document.getElementById('volumeValue');
 
-        // 初始化音量显示
-        volumeValue.textContent = `${Math.round(volumeSlider.value * 100)}%`;
-
-        // 滑块改变时更新音量
-        volumeSlider.addEventListener('input', function() {
-            // 设置视频音量（0-1之间）
+        volumeSlider.addEventListener('input', function () {
             videoEl.volume = this.value;
-            // 更新音量百分比显示
             volumeValue.textContent = `${Math.round(this.value * 100)}%`;
-            
-            // 根据音量切换图标
-            const volumeIcon = document.querySelector('.volume-icon');
-            if (this.value == 0) {
-                volumeIcon.textContent = '🔇';
-            } else if (this.value < 0.5) {
-                volumeIcon.textContent = '🔈';
-            } else {
-                volumeIcon.textContent = '🔊';
-            }
         });
 
-        // 视频音量变化时同步滑块（比如用户用视频自带控件调节）
-        videoEl.addEventListener('volumechange', function() {
-            volumeSlider.value = this.volume;
-            volumeValue.textContent = `${Math.round(this.volume * 100)}%`;
-            
-            const volumeIcon = document.querySelector('.volume-icon');
-            if (this.volume == 0) {
-                volumeIcon.textContent = '🔇';
-            } else if (this.volume < 0.5) {
-                volumeIcon.textContent = '🔈';
-            } else {
-                volumeIcon.textContent = '🔊';
-            }
-        });
-
-        // 原有视频生成表单提交逻辑
-        document.getElementById('videoForm').addEventListener('submit', function (e) {
+        // ============ 提交表单 ============
+        document.getElementById('videoForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const formData = new FormData(this);
+            const generateBtn = document.getElementById('generateBtn');
+            const modelSelect = document.getElementById('modelSelect');
 
-            fetch('/video_generation', {
-                method: 'POST',
-                body: formData
-            })
-                .then(res => res.json())
-                .then(data => {
-                    console.log("后端返回:", data);
-                    if (data.status === 'success') {
-                        const videoEl = document.getElementById('outputVideo');
-                        const newSrc = data.video_path + '?t=' + new Date().getTime();
-                        videoEl.src = newSrc;
-                        videoEl.load();
-                        videoEl.play().catch(err => console.warn('自动播放被阻止:', err));
-                    } else {
-                        alert('视频生成失败！');
-                    }
-                })
-                .catch(err => console.error('错误:', err));
+            // 添加 model_path
+            const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+            if (selectedOption && selectedOption.dataset.path) {
+                formData.append('model_path', selectedOption.dataset.path);
+            }
+
+            // 验证
+            if (!formData.get('model_name')) {
+                alert('请选择一个模型');
+                return;
+            }
+            if (!formData.get('ref_audio_file') || formData.get('ref_audio_file').size === 0) {
+                alert('请上传驱动音频');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ 生成中...';
+
+            try {
+                const res = await fetch('/video_generation', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    const videoEl = document.getElementById('outputVideo');
+                    videoEl.src = data.video_path + '?t=' + Date.now();
+                    videoEl.load();
+                    videoEl.play();
+                    alert('视频生成成功！');
+                } else {
+                    alert('生成失败: ' + data.message);
+                }
+            } catch (err) {
+                console.error('生成请求失败:', err);
+                alert('请求失败，请查看控制台');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = '🎬 生成视频';
+            }
         });
     </script>
-
 </body>
 
 </html>
