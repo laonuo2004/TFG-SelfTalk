@@ -192,9 +192,9 @@ def about():
     return render_template("about.html")
 
 
-@app.route("/实时对话.html")
+@app.route("/realtime_talk.html")
 def realtime_html():
-    return render_template("实时对话.html")
+    return render_template("realtime_talk.html")
 
 
 # ================== 本地 WebSocket 网关 ==================

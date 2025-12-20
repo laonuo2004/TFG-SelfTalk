@@ -4,446 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <title>人机对话系统 - DATA HAMMER GROUP</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        body {
-            font-family: 'Microsoft YaHei', sans-serif;
-            margin: 0;
-        }
-
-        body.main-bg {
-            background: radial-gradient(circle at top, #05070a 0%, #050608 35%, #000000 100%);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 顶部导航条（与首页风格统一） */
-        .nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 32px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(12px);
-            background: linear-gradient(
-                90deg,
-                rgba(0, 229, 255, 0.18),
-                rgba(0, 0, 0, 0.6),
-                rgba(0, 229, 255, 0.08)
-            );
-            position: sticky;
-            top: 0;
-            z-index: 20;
-        }
-
-        .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-logo-mark {
-            width: 26px;
-            height: 26px;
-            border-radius: 10px;
-            background: conic-gradient(from 200deg, #00e5ff, #0072ff, #00ffbf, #00e5ff);
-            box-shadow: 0 0 18px rgba(0, 229, 255, 0.8);
-            position: relative;
-        }
-
-        .nav-logo-mark::after {
-            content: "";
-            position: absolute;
-            inset: 4px;
-            border-radius: 8px;
-            background: radial-gradient(circle at 30% 20%, #0b1b26, #020509);
-        }
-
-        .nav-logo-text-main {
-            font-size: 1.05rem;
-            letter-spacing: 0.12em;
-        }
-
-        .nav-logo-text-sub {
-            font-size: 0.75rem;
-            opacity: 0.6;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 22px;
-            font-size: 0.95rem;
-        }
-
-        .nav-links a {
-            color: rgba(255, 255, 255, 0.75);
-            text-decoration: none;
-            position: relative;
-            padding-bottom: 4px;
-            cursor: pointer;
-        }
-
-        .nav-links a::after {
-            content: "";
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            width: 0;
-            height: 2px;
-            border-radius: 999px;
-            background: linear-gradient(90deg, #00e5ff, #00ffbf);
-            transition: width 0.25s ease;
-        }
-
-        .nav-links a:hover::after {
-            width: 100%;
-        }
-
-        .nav-cta {
-            padding: 8px 18px;
-            border-radius: 999px;
-            border: 1px solid rgba(0, 229, 255, 0.5);
-            background: radial-gradient(circle at 0 0, rgba(0, 229, 255, 0.35), transparent);
-            font-size: 0.9rem;
-            cursor: pointer;
-            color: #e6faff;
-            transition: all 0.25s ease;
-        }
-
-        .nav-cta:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
-            background: radial-gradient(circle at 100% 0, rgba(0, 229, 255, 0.5), transparent);
-        }
-
-        @media (max-width: 960px) {
-            .nav {
-                padding: 10px 16px;
-            }
-        }
-
-        /* 页面主体：居中布局 */
-        .page-wrapper {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            padding: 24px 16px 24px;
-        }
-
-        .page-inner {
-            width: 100%;
-            max-width: 720px;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            margin: 0 auto;
-        }
-
-        /* 标题区域 */
-        .page-header {
-            text-align: center;
-        }
-
-        .page-title {
-            font-size: 1.7rem;
-            letter-spacing: 0.1em;
-            margin: 4px 0 6px;
-        }
-
-        .page-subtitle {
-            font-size: 0.9rem;
-            color: rgba(220, 235, 255, 0.75);
-        }
-
-        /* 主容器：左右两列，玻璃拟态科技风 */
-        .video-page-container {
-            display: flex;
-            gap: 18px;
-            background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.18), transparent 55%),
-                        rgba(255, 255, 255, 0.03);
-            border-radius: 18px;
-            padding: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            box-shadow:
-                0 0 30px rgba(0, 229, 255, 0.18),
-                0 0 90px rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(14px);
-            width: 100%;
-            margin: 0 auto;
-        }
-
-        @media (max-width: 900px) {
-            .video-page-container {
-                flex-direction: column;
-            }
-        }
-
-        .video-display {
-            flex: 1;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .video-display video {
-            border-radius: 10px;
-            box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
-            max-width: 100%;
-            height: 210px;   /* 👉 想要多高就改这里，比如 260 / 300 都行 */
-        }
-
-        /* 右侧参数区卡片 */
-        .form-section {
-            flex: 1;
-            padding: 16px 18px;
-            background: rgba(5, 10, 20, 0.92);
-            border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
-            color: rgba(230, 243, 255, 0.9);
-            font-size: 0.9rem;
-        }
-
-        select,
-        input {
-            width: 100%;
-            padding: 9px 10px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            box-sizing: border-box;
-            background: rgba(0, 0, 0, 0.35);
-            color: #eaf6ff;
-            outline: none;
-        }
-
-        select:focus,
-        input:focus {
-            border-color: #00e5ff;
-            box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.4);
-        }
-
-        .generate-btn {
-            width: 100%;
-            padding: 11px;
-            background: linear-gradient(120deg, #00c6ff, #0072ff);
-            color: white;
-            border: none;
-            border-radius: 999px;
-            font-size: 0.98rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 8px;
-            box-shadow: 0 0 18px rgba(0, 229, 255, 0.35);
-        }
-
-        .generate-btn:hover {
-            background: linear-gradient(120deg, #0072ff, #00e5ff);
-            transform: translateY(-1px);
-            box-shadow: 0 0 24px rgba(0, 229, 255, 0.55);
-        }
-
-        /* 语音录制器卡片 */
-        .voice-recorder {
-            width: 100%;
-            padding: 16px 16px 14px;
-            background: rgba(5, 10, 20, 0.92);
-            border-radius: 14px;
-            box-shadow: 0 0 18px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            text-align: center;
-        }
-
-        .recorder-title {
-            font-size: 0.98rem;
-            margin-bottom: 10px;
-            color: rgba(230, 243, 255, 0.95);
-        }
-
-        .record-btn {
-            padding: 10px 22px;
-            background: linear-gradient(120deg, #ff4d4d, #ff784e);
-            color: white;
-            border: none;
-            border-radius: 999px;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 10px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .record-btn span {
-            font-size: 1.1rem;
-        }
-
-        .record-btn:hover {
-            background: linear-gradient(120deg, #ff784e, #ff4d4d);
-            transform: scale(1.03);
-            box-shadow: 0 0 18px rgba(255, 120, 78, 0.6);
-        }
-
-        .record-btn.recording {
-            background: linear-gradient(120deg, #2ecc71, #1abc9c);
-            animation: pulse 1.5s infinite;
-        }
-
-        .record-btn.recording:hover {
-            background: linear-gradient(120deg, #1abc9c, #2ecc71);
-        }
-
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
-            }
-
-            70% {
-                box-shadow: 0 0 0 12px rgba(46, 204, 113, 0);
-            }
-
-            100% {
-                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
-            }
-        }
-
-        .timer {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #eaf6ff;
-            margin: 10px 0 6px;
-        }
-
-        .recording-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin: 4px 0 6px;
-            font-size: 0.88rem;
-            color: rgba(255, 230, 230, 0.9);
-        }
-
-        .recording-dot {
-            width: 10px;
-            height: 10px;
-            background-color: #e74c3c;
-            border-radius: 50%;
-            animation: blink 1.5s infinite;
-        }
-
-        @keyframes blink {
-            0%,
-            50% {
-                opacity: 1;
-            }
-
-            51%,
-            100% {
-                opacity: 0;
-            }
-        }
-
-        .status-message {
-            margin-top: 4px;
-            font-size: 0.8rem;
-            color: rgba(190, 205, 220, 0.9);
-        }
-
-        .footer {
-            text-align: center;
-            padding: 8px 0 14px;
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.35);
-        }
-
-        /* LZY修改标题格式 */
-        .headline {
-            font-size: 1.8rem;
-            margin: 0 0 10px;
-            letter-spacing: 0.08em;
-        }
-
-        .headline span {
-            color: #00e5ff;
-        }
-
-        .subline {
-            font-size: 0.92rem;
-            color: rgba(226, 244, 255, 0.85);
-            max-width: 720px;
-            line-height: 1.7;
-            margin: 0 auto 18px;
-            text-align: center;
-        }
-
-        .hero-card {
-            background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.18), transparent 55%),
-                        rgba(255, 255, 255, 0.02);
-            border-radius: 18px;
-            padding: 22px 20px 20px;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            box-shadow:   
-                0 0 30px rgba(0, 229, 255, 0.18),
-                0 0 90px rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
-            position: relative;
-            overflow: hidden;
-            margin: 0 auto;
-            width: 100%;
-            text-align: center;
-        }
-
-        .hero-card::before {
-            content: "DATA • HAMMER • TALKING • SYSTEM";
-            position: absolute;
-            top: 10px;
-            right: -40px;
-            font-size: 0.65rem;
-            letter-spacing: 0.35em;
-            color: rgba(255, 255, 255, 0.08);
-            transform: rotate(-6deg);
-            white-space: nowrap;
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 4px 10px;
-            border-radius: 999px;
-            background: rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(0, 229, 255, 0.5);
-            font-size: 0.75rem;
-            color: #cfefff;
-            margin-bottom: 14px;
-        }
-
-        .badge-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 999px;
-            background: radial-gradient(circle, #00ffbf, #00e5ff);
-            box-shadow: 0 0 10px rgba(0, 229, 255, 0.9);
-        }
-        /* 到此 */
-    </style>
+    
 </head>
 
 <body class="main-bg">
@@ -461,7 +25,7 @@
                         <a href="/chat_system">人机对话</a>
                         <a href="/model_training">模型训练</a>
                         <a href="/video_generation">视频生成</a>
-                        <a href="/实时对话.html">实时对话</a>
+                        <a href="/realtime_talk.html">实时对话</a>
                         <a href="/about">关于我们</a>
                     </nav>
         <button class="nav-cta" onclick="window.location.href='/'">
@@ -500,7 +64,16 @@
 
                     <video id="chatVideo" controls width="420">
                         <source src="{{ url_for('static', filename='videos/sample.mp4') }}" type="video/mp4">
-                    </video>
+                    </video> 
+                    <!-- 新增：音量控制区域 -->
+                    <div class="volume-control">
+                        <label for="volumeSlider">视频音量</label>
+                        <div class="volume-slider-wrapper">
+                            <span class="volume-icon">🔊</span>
+                            <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1">
+                            <span class="volume-value" id="volumeValue">100%</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 右侧：参数表单 -->
@@ -511,7 +84,7 @@
                             <select name="model_name">
                                 <option value="model1">Model 1</option>
                                 <option value="model2">Model 2</option>
-                                <option value="SyncTalk">SyncTalk</option>
+                                <option value="SelfTalk">SelfTalk</option>
                             </select>
                         </div>
 
@@ -652,7 +225,46 @@
                 stopRecording();
             }
         });
-        
+        // 新增：音量控制逻辑
+        const videoEl = document.getElementById('chatVideo');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+
+        // 初始化音量显示
+        volumeValue.textContent = `${Math.round(volumeSlider.value * 100)}%`;
+
+        // 滑块改变时更新音量
+        volumeSlider.addEventListener('input', function() {
+            // 设置视频音量（0-1之间）
+            videoEl.volume = this.value;
+            // 更新音量百分比显示
+            volumeValue.textContent = `${Math.round(this.value * 100)}%`;
+            
+            // 根据音量切换图标
+            const volumeIcon = document.querySelector('.volume-icon');
+            if (this.value == 0) {
+                volumeIcon.textContent = '🔇';
+            } else if (this.value < 0.5) {
+                volumeIcon.textContent = '🔈';
+            } else {
+                volumeIcon.textContent = '🔊';
+            }
+        });
+
+        // 视频音量变化时同步滑块（比如用户用视频自带控件调节）
+        videoEl.addEventListener('volumechange', function() {
+            volumeSlider.value = this.volume;
+            volumeValue.textContent = `${Math.round(this.volume * 100)}%`;
+            
+            const volumeIcon = document.querySelector('.volume-icon');
+            if (this.volume == 0) {
+                volumeIcon.textContent = '🔇';
+            } else if (this.volume < 0.5) {
+                volumeIcon.textContent = '🔈';
+            } else {
+                volumeIcon.textContent = '🔊';
+            }
+        });
         document.getElementById('chatForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const formData = new FormData(this);
