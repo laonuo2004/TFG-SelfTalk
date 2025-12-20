@@ -7,6 +7,7 @@ from __future__ import annotations
 import datetime
 import os
 import pickle
+import sys
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,8 +20,15 @@ import torch
 from psbody.mesh import Mesh
 from transformers import Wav2Vec2Processor
 
-from SelfTalk.SelfTalk import SelfTalk
-from SelfTalk.demo_voca import render_sequence_meshes
+# 将 SelfTalk 目录添加到 Python 路径开头，确保优先使用本地的 wav2vec.py
+# 而不是 conda 环境中安装的 wav2vec 包
+_SELFTALK_DIR = Path(__file__).resolve().parents[1] / "SelfTalk"
+if str(_SELFTALK_DIR) not in sys.path:
+    sys.path.insert(0, str(_SELFTALK_DIR))
+
+from backend.utils import normalize_device
+from SelfTalk import SelfTalk
+from demo_voca import render_sequence_meshes
 
 os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
 
@@ -121,7 +129,7 @@ def _build_config(payload) -> SelfTalkInferenceConfig:
     run_dir.mkdir(parents=True, exist_ok=True)
 
     feature_dim, vertice_dim, period, fps = _dataset_defaults(dataset)
-    device = _normalize_device(payload.gpu_choice)
+    device = normalize_device(payload.gpu_choice)
 
     return SelfTalkInferenceConfig(
         repo_root=repo_root,
@@ -140,20 +148,6 @@ def _build_config(payload) -> SelfTalkInferenceConfig:
         period=period,
         fps=fps,
     )
-
-
-def _normalize_device(gpu_choice: Optional[str]) -> str:
-    """将 GPU 选择转换为 torch.device 可识别字符串。"""
-    if not gpu_choice:
-        return "cpu"
-    choice = gpu_choice.strip().lower()
-    if choice.startswith("gpu"):
-        index = "".join(filter(str.isdigit, choice)) or "0"
-        return f"cuda:{index}" if torch.cuda.is_available() else "cpu"
-    if choice.startswith("cuda") and torch.cuda.is_available():
-        return gpu_choice
-    return "cpu"
-
 
 def _dataset_defaults(dataset: str) -> Tuple[int, int, int, int]:
     """返回 dataset 对应的 feature_dim / vertice_dim / period / fps。"""

@@ -26,6 +26,8 @@ docs/AI/
 **/.ipynb_checkpoints/
 
 # other
+launch.json
+*.code-workspace
 .specstory/
 .cursorindexingignore
 .DS_Store

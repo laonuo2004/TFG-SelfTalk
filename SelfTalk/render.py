@@ -19,7 +19,7 @@ import numpy as np
 from subprocess import call
 import argparse
 
-os.environ['PYOPENGL_PLATFORM'] = 'osmesa'  # egl
+# os.environ['PYOPENGL_PLATFORM'] = 'osmesa'  # egl - commented out for WSL compatibility
 import pyrender
 import trimesh
 from psbody.mesh import Mesh
@@ -27,6 +27,9 @@ from psbody.mesh import Mesh
 
 # The implementation of rendering is borrowed from VOCA: https://github.com/TimoBolkart/voca/blob/master/utils/rendering.py
 def render_mesh_helper(args, mesh, t_center, rot=np.zeros(3), tex_img=None, z_offset=0):
+    # Ensure we don't use OSMesa which may not be available in WSL
+    if 'PYOPENGL_PLATFORM' in os.environ and os.environ['PYOPENGL_PLATFORM'] == 'osmesa':
+        del os.environ['PYOPENGL_PLATFORM']
     if args.dataset == "BIWI":
         camera_params = {'c': np.array([400, 400]),
                          'k': np.array([-0.19816071, 0.92822711, 0, 0, 0]),

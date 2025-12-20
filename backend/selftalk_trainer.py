@@ -16,7 +16,9 @@ from typing import Any, Dict
 import subprocess
 import datetime
 import os
+import torch
 
+from backend.utils import normalize_device
 
 @dataclass
 class SelfTalkTrainConfig:
@@ -100,8 +102,10 @@ def _build_config(payload) -> SelfTalkTrainConfig:
     #   - 支持 vocaset / BIWI 不同的 vertice_dim / feature_dim
     #   - 从 payload.extra 中读取自定义参数
 
-    ROOT = Path("/root/autodl-tmp/TFG-SelfTalk/SelfTalk")
-    DATA_ROOT = ROOT / payload.dataset  # /root/.../SelfTalk/vocaset
+    # 动态获取项目根目录，避免硬编码路径
+    PROJECT_ROOT = Path(__file__).resolve().parents[1]  # backend/ -> TFG-SelfTalk/
+    ROOT = PROJECT_ROOT / "SelfTalk"
+    DATA_ROOT = ROOT / payload.dataset  # .../SelfTalk/vocaset
 
 
     # 构造 save 目录
@@ -126,7 +130,7 @@ def _build_config(payload) -> SelfTalkTrainConfig:
         max_epoch=payload.epochs,
         feature_dim=64,     # 默认值，可根据实际模型调整
         vertice_dim=3,      # 默认值，可根据实际模型调整
-        gpu=payload.gpu_choice,
+        gpu=normalize_device(payload.gpu_choice),
         train_subjects=payload.train_subjects,
         val_subjects=payload.val_subjects,
         test_subjects=payload.test_subjects or "",

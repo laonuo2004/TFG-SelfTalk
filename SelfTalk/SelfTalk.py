@@ -1,9 +1,13 @@
+import os
 import pickle
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
 from wav2vec import Wav2Vec2Model, Wav2Vec2ForCTC, linear_interpolation
+
+# 获取当前脚本所在目录的绝对路径，用于构建数据文件的绝对路径
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # Temporal Bias, brrowed from https://github.com/EvelynFan/FaceFormer/blob/main/faceformer.py
@@ -71,13 +75,14 @@ class SelfTalk(nn.Module):
         self.audio_encoder.feature_extractor._freeze_parameters()
 
         if args.dataset == "vocaset":
-            pkl_path = "./vocaset/FLAME_masks.pkl"
+            pkl_path = os.path.join(_SCRIPT_DIR, "vocaset", "FLAME_masks.pkl")
             with open(pkl_path, 'rb') as f:
                 self.lip_mask = pickle.load(f, encoding='latin1')["lips"]
                 self.lip_map = nn.Linear(254 * 3, 1024)
 
         elif args.dataset == "BIWI":
-            with open('./BIWI/BIWI_lip.pkl', 'rb') as f:
+            biwi_pkl_path = os.path.join(_SCRIPT_DIR, "BIWI", "BIWI_lip.pkl")
+            with open(biwi_pkl_path, 'rb') as f:
                 self.lip_mask = pickle.load(f, encoding='latin1')
                 self.lip_map = nn.Linear(4996 * 3, 1024)
 

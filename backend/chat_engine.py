@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from backend.services.volc_clients import chat_llm, speech_recognizer, tts_engine
+from backend.services.volc_clients import chat_llm, speech_recognizer, voice_cloner
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 STATIC_DIR = BASE_DIR / "static"
@@ -52,11 +52,13 @@ def chat_response(form_data: Dict[str, Any]) -> Dict[str, Any]:
     request = _build_chat_request(form_data)
 
     transcript = _run_speech_recognition(request.recording_path)
+    # transcript = "Please introduce yourself shortly."
     ai_reply = _run_large_language_model(
         transcript=transcript,
         api_key=request.llm_api_key,
         model_name=request.llm_model,
     )
+    # ai_reply = "Hi! I'm the digital assistant for DATA HAMMER GROUP. I’m here to help with questions, info, or tasks—just ask, and I’ll do my best to assist!"
     cloned_audio = _run_tts_clone(
         text=ai_reply,
         reference_audio=request.reference_audio,
@@ -154,7 +156,7 @@ def _run_large_language_model(
         str: 回复文本。
     """
     system_prompt = (
-        "你是 DATA HAMMER GROUP 的数字助理，请用简短自然的口语回答用户问题。"
+        "你是一名 AI 助手，请用简短自然的口语与用户进行对话。"
     )
     history: Optional[list[dict[str, str]]] = None
     # 目前统一走项目级 API Key，api_key 参数预留用于后续扩展差异化身份。
@@ -170,7 +172,9 @@ def _run_large_language_model(
 
 
 def _run_tts_clone(text: str, reference_audio: Path) -> str:
-    """使用火山 TTS 生成回复音频.
+    """使用火山语音克隆生成回复音频.
+    
+    使用参考音频的音色来合成 AI 回复。
     
     Args:
         text (str): 回复文本。
@@ -180,9 +184,12 @@ def _run_tts_clone(text: str, reference_audio: Path) -> str:
         str: 合成音频路径。
     """
     try:
-        return tts_engine.synthesize(text)
+        return voice_cloner.clone_and_synthesize(
+            text=text,
+            reference_audio=str(reference_audio),
+        )
     except Exception as exc:
-        logger.error("调用火山 TTS 失败，将回落到参考音频: %s", exc)
+        logger.error("调用语音克隆失败，将回落到参考音频: %s", exc)
         # 回退方案：直接复用参考音色，以保证流程不中断。
         fallback = TTS_OUTPUT_DIR / f"tts_fallback_{uuid.uuid4().hex}{reference_audio.suffix or '.wav'}"
         if reference_audio.exists():

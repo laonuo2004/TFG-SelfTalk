@@ -30,6 +30,7 @@ class TrainingPayload:
     train_subjects: Optional[str] = None         # SelfTalk
     val_subjects: Optional[str] = None
     test_subjects: Optional[str] = None
+    model_name: Optional[str] = None             # 用户命名（可选）
     extra: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -79,17 +80,17 @@ def _normalize_training_payload(form_data: Dict[str, Any]) -> TrainingPayload:
     """
 
     payload = TrainingPayload(
-        model_choice = form_data.get("model_choice", "SyncTalk"),
-        gpu_choice = form_data.get("gpu_choice", "GPU0"),
+        model_choice = form_data.get("model_choice", "SelfTalk"),  # 默认 SelfTalk
+        gpu_choice = form_data.get("gpu_choice") or form_data.get("device", "GPU0"),
         epochs = int(form_data.get("epoch", 100)),
         ref_video=form_data.get("ref_video"),
         dataset=form_data.get("dataset", "vocaset"),
         train_subjects=form_data.get("train_subjects"),
         val_subjects=form_data.get("val_subjects"),
         test_subjects=form_data.get("test_subjects"),
+        model_name=form_data.get("model_name"),  # 用户命名（可选）
         extra={
             "raw_form_data": form_data,
-            # TODO: 在这里塞入更多元数据（如用户 id、任务 id）
         },
     )
     return payload
@@ -230,7 +231,9 @@ def _train_selftalk_pipeline(payload: TrainingPayload) -> Dict[str, Any]:
 
     print("[SelfTalk] 参数：", args)
     
-    SELF_TALK_ROOT = "/root/autodl-tmp/TFG-SelfTalk/SelfTalk" 
+    # 动态获取项目根目录，避免硬编码路径
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # backend/ -> TFG-SelfTalk/
+    SELF_TALK_ROOT = os.path.join(PROJECT_ROOT, "SelfTalk")
     dataset_root = os.path.join(SELF_TALK_ROOT, payload.dataset, "wav")
 
     # save 目录
@@ -282,12 +285,36 @@ def _train_selftalk_pipeline(payload: TrainingPayload) -> Dict[str, Any]:
 
     print("[SelfTalk] 最新模型目录：", latest_model)
 
+    # 自动注册模型到模型注册表
+    if latest_model:
+        try:
+            from backend.model_registry import register_model
+            
+            # 解析 subjects（可能是空格分隔的字符串）
+            train_list = payload.train_subjects.split() if payload.train_subjects else []
+            val_list = payload.val_subjects.split() if payload.val_subjects else []
+            test_list = payload.test_subjects.split() if payload.test_subjects else []
+            
+            registered_model = register_model(
+                path=latest_model,
+                epochs=payload.epochs,
+                dataset=payload.dataset or "vocaset",
+                train_subjects=train_list,
+                val_subjects=val_list,
+                test_subjects=test_list,
+                name=payload.model_name,  # 用户命名（可为空）
+            )
+            print(f"[SelfTalk] 模型已注册: {registered_model.name}")
+        except Exception as reg_err:
+            print(f"[SelfTalk] 模型注册失败（不影响训练结果）: {reg_err}")
+
     return {
         "status": "success",
         "message": "SelfTalk 模型训练完成",
         "artifacts": {
             "checkpoint": latest_model,
-            "raw_output": training_output
+            "raw_output": training_output,
+            "model_name": getattr(registered_model, "name", None) if "registered_model" in dir() else None,
         }
     }
     # raise NotImplementedError("SelfTalk 训练流程待实现")
