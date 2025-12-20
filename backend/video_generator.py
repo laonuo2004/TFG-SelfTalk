@@ -90,8 +90,15 @@ def _resolve_generation_handler(model_name: str) -> GenerationHandler:
         "SyncTalk": _generate_with_synctalk,
         "SelfTalk": _generate_with_selftalk,
     }
-    if model_name not in handlers:
-        raise NotImplementedError(f"暂不支持的模型: {model_name}")
+    if model_name in handlers:
+        return handlers[model_name]
+
+    # 尝试从注册表查找自定义模型
+    from backend.model_registry import get_model
+    if get_model(model_name):
+        return _generate_with_selftalk
+
+    raise NotImplementedError(f"暂不支持的模型: {model_name}")
     return handlers[model_name]
 
 
@@ -132,6 +139,13 @@ def _generate_with_selftalk(payload: GenerationPayload) -> Dict[str, Any]:
             "status": "failed",
             "message": "SelfTalk 推理需要音频路径 ref_audio",
         }
+
+    # 如果 payload 中未包含 path，尝试从注册表补全
+    if not payload.model_path:
+        from backend.model_registry import get_model
+        model_info = get_model(payload.model_name)
+        if model_info:
+            payload.model_path = model_info.path
 
     result = run_selftalk_inference(payload)
     return result

@@ -185,9 +185,13 @@
 
     <script>
         // ============ 全局变量 ============
-        let mediaRecorder;
-        let audioChunks = [];
+        let audioContext;
+        let mediaStreamSource;
+        let scriptProcessor;
+        let audioBuffers = []; // 存储 PCM 数据 (Float32)
         let isRecording = false;
+        let recordingLength = 0;
+        let sampleRate;
         let startTime;
         let timerInterval;
 
@@ -272,7 +276,7 @@
             });
         }
 
-        // ============ 录音逻辑 ============
+        // ============ 录音逻辑 (AudioContext DIY WAV) ============
         const recordButton = document.getElementById('recordButton');
         const timerDisplay = document.getElementById('timer');
         const recordingIndicator = document.getElementById('recordingIndicator');
@@ -283,50 +287,76 @@
 
         async function toggleRecording() {
             if (!isRecording) {
-                // 开始录音
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
-
-                    mediaRecorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
-
-                    mediaRecorder.onstop = uploadAudio;
-
-                    mediaRecorder.start();
-                    isRecording = true;
-                    startTime = Date.now();
-
-                    // UI 更新
-                    recordButton.innerHTML = '<span>■</span> 停止录音';
-                    recordButton.classList.add('recording');
-                    recordingIndicator.style.display = 'flex';
-                    statusMessage.textContent = '正在录音...';
-                    startChatBtn.disabled = true;
-                    startChatBtn.textContent = '请先完成录音';
-
-                    timerInterval = setInterval(updateTimer, 1000);
-                } catch (err) {
-                    console.error('无法访问麦克风:', err);
-                    alert('无法访问麦克风，请检查权限设置');
-                }
+                startRecording();
             } else {
-                // 停止录音
-                mediaRecorder.stop();
-                isRecording = false;
-                clearInterval(timerInterval);
+                stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 }); // 尝试请求 16k
+                sampleRate = audioContext.sampleRate;
+                console.log('AudioContext sampling rate:', sampleRate);
+
+                mediaStreamSource = audioContext.createMediaStreamSource(stream);
+                // bufferSize 4096, 1 input channel, 1 output channel
+                scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                audioBuffers = [];
+                recordingLength = 0;
+
+                scriptProcessor.onaudioprocess = function (e) {
+                    if (!isRecording) return;
+                    const inputBuffer = e.inputBuffer.getChannelData(0);
+                    // Deep copy
+                    const bufferCopy = new Float32Array(inputBuffer);
+                    audioBuffers.push(bufferCopy);
+                    recordingLength += bufferCopy.length;
+                };
+
+                mediaStreamSource.connect(scriptProcessor);
+                scriptProcessor.connect(audioContext.destination);
+
+                isRecording = true;
+                startTime = Date.now();
 
                 // UI 更新
-                recordButton.innerHTML = '<span>●</span> 重新录音';
-                recordButton.classList.remove('recording');
-                recordingIndicator.style.display = 'none';
-                statusMessage.textContent = '正在上传录音...';
+                recordButton.innerHTML = '<span>■</span> 停止录音';
+                recordButton.classList.add('recording');
+                recordingIndicator.style.display = 'flex';
+                statusMessage.textContent = '正在录音...';
+                startChatBtn.disabled = true;
+                startChatBtn.textContent = '请先完成录音';
 
-                // 停止所有音频轨道
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            } updateTimer(); // Reset timer display immediately
+                timerInterval = setInterval(updateTimer, 1000);
+
+            } catch (err) {
+                console.error('无法访问麦克风:', err);
+                alert('无法访问麦克风，请检查权限设置');
+            }
+        }
+
+        async function stopRecording() {
+            isRecording = false;
+            clearInterval(timerInterval);
+
+            // 停止 AudioContext 和 Stream
+            if (mediaStreamSource) mediaStreamSource.disconnect();
+            if (scriptProcessor) scriptProcessor.disconnect();
+            if (audioContext) await audioContext.close();
+
+            // UI 更新
+            recordButton.innerHTML = '<span>●</span> 重新录音';
+            recordButton.classList.remove('recording');
+            recordingIndicator.style.display = 'none';
+            statusMessage.textContent = '正在处理录音...';
+            updateTimer();
+
+            // 处理音频数据并上传
+            const wavBlob = encodeWAV(audioBuffers, recordingLength, sampleRate);
+            uploadAudio(wavBlob);
         }
 
         function updateTimer() {
@@ -340,12 +370,69 @@
             timerDisplay.textContent = `${minutes}:${seconds}`;
         }
 
+        // ============ WAV 编码 ============
+        function encodeWAV(buffers, totalLength, sampleRate) {
+            // 1. Flatten buffer
+            const resultBuffer = new Float32Array(totalLength);
+            let offset = 0;
+            for (let i = 0; i < buffers.length; i++) {
+                resultBuffer.set(buffers[i], offset);
+                offset += buffers[i].length;
+            }
+
+            // 2. Resample if needed (Backend likes 16k, if context is > 16k, we could downsample here, 
+            //    but simple WAV header is safer first. Let's stick to what we got or simple decimation if needed.
+            //    Most browsers support context creation with sampleRate: 16000 now.
+
+            // 3. Create WAV file
+            const buffer = new ArrayBuffer(44 + resultBuffer.length * 2);
+            const view = new DataView(buffer);
+
+            // RIFF chunk descriptor
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + resultBuffer.length * 2, true);
+            writeString(view, 8, 'WAVE');
+
+            // fmt sub-chunk
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // PCM
+            view.setUint16(22, 1, true); // Mono
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true); // 16 - bit
+
+            // data sub-chunk
+            writeString(view, 36, 'data');
+            view.setUint32(40, resultBuffer.length * 2, true);
+
+            // Write PCM samples
+            floatTo16BitPCM(view, 44, resultBuffer);
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        function floatTo16BitPCM(output, offset, input) {
+            for (let i = 0; i < input.length; i++, offset += 2) {
+                let s = Math.max(-1, Math.min(1, input[i]));
+                s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                output.setInt16(offset, s, true);
+            }
+        }
+
         // ============ 上传录音 ============
-        async function uploadAudio() {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        async function uploadAudio(audioBlob) {
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.wav');
 
+            statusMessage.textContent = '正在上传录音...';
             try {
                 const response = await fetch('/save_audio', {
                     method: 'POST',

@@ -37,7 +37,7 @@
 
         .multi-select-item input[type="checkbox"] {
             margin-right: 10px;
-            accent-color: #6366f1;
+            accent-color: #06b6d4;
         }
 
         .multi-select-item.group-header {
@@ -57,11 +57,23 @@
         }
 
         /* 模型管理面板样式 */
+        .left-panel-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 20px;
+        }
+
         .model-management-panel {
             background: rgba(20, 20, 40, 0.9);
             border-radius: 12px;
             padding: 20px;
-            height: 100%;
+            flex: 4;
+            /* 占据更多空间 (80%) */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(6, 182, 212, 0.1);
         }
 
         .panel-title {
@@ -69,11 +81,13 @@
             font-weight: bold;
             margin-bottom: 16px;
             color: #fff;
+            flex-shrink: 0;
         }
 
         .model-list {
-            max-height: 300px;
+            flex: 1;
             overflow-y: auto;
+            padding-right: 5px;
         }
 
         .model-item {
@@ -81,7 +95,7 @@
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 10px;
-            border-left: 3px solid #6366f1;
+            border-left: 3px solid #06b6d4;
         }
 
         .model-item .model-name {
@@ -111,39 +125,56 @@
 
         /* 训练进度面板 */
         .training-progress {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
+            background: rgba(20, 20, 40, 0.9);
+            border-radius: 12px;
             padding: 16px;
-            margin-top: 16px;
-            display: none;
+            /* 稍微减小 padding */
+            flex: 1;
+            /* 占据较少空间 (20%) */
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(6, 182, 212, 0.1);
         }
 
         .training-progress.active {
-            display: block;
+            display: flex;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-shrink: 0;
         }
 
         .progress-title {
             font-weight: bold;
-            margin-bottom: 10px;
+            color: #fff;
         }
 
         .log-output {
-            background: #0a0a0a;
-            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-radius: 6px;
             padding: 12px;
-            font-family: monospace;
+            font-family: 'Consolas', 'Monaco', monospace;
             font-size: 0.85em;
-            max-height: 200px;
+            flex: 1;
             overflow-y: auto;
-            color: #0f0;
+            color: #22d3ee;
+            /* Cyan text */
+            line-height: 1.4;
         }
 
         .video-display {
             flex: 1.6 !important;
+            display: block;
+            /* 取消原来的 layout 限制，使用内部 container */
         }
 
         .model-management-panel {
-            width: 80%;
+            width: 90%;
         }
     </style>
 </head>
@@ -187,21 +218,31 @@
             </div>
 
             <div class="video-page-container">
-                <!-- 左侧：模型管理面板 -->
+                <!-- 左侧：模型管理面板 + 训练日志 -->
                 <div class="video-display" style="min-width: 400px;">
-                    <div class="model-management-panel">
-                        <div class="panel-title">📦 已训练模型</div>
-                        <div class="model-list" id="modelList">
-                            <div style="color: #888; text-align: center; padding: 20px;">
-                                加载中...
+                    <div class="left-panel-container">
+                        <!-- 上半部分：模型列表 -->
+                        <div class="model-management-panel">
+                            <div class="panel-title">📦 已训练模型</div>
+                            <div class="model-list" id="modelList">
+                                <div style="color: #888; text-align: center; padding: 20px;">
+                                    加载中...
+                                </div>
                             </div>
                         </div>
 
-                        <div class="training-progress" id="trainingProgress">
-                            <div class="progress-title">🚀 训练中...</div>
-                            <div class="log-output" id="logOutput">
-                                等待训练开始...
+                        <!-- 下半部分：训练日志 -->
+                        <div class="training-progress active" id="trainingProgress">
+                            <div class="progress-header">
+                                <div class="progress-title">
+                                    🚀 训练日志
+                                    <span id="trainingStatusText"
+                                        style="font-weight: normal; font-size: 0.85em; margin-left: 10px; color: #888;">(准备就绪)</span>
+                                </div>
+                                <div id="trainingTimer"
+                                    style="font-family: monospace; color: #06b6d4; font-weight: bold;">00:00:00</div>
                             </div>
+                            <div class="log-output" id="logOutput">等待训练开始...</div>
                         </div>
                     </div>
                 </div>
@@ -374,11 +415,35 @@
                     data.models.forEach(model => {
                         const item = document.createElement('div');
                         item.className = 'model-item';
+
+                        // 辅助方法
+                        const fmtSub = (list) => list && list.length ? list.join(', ') : '无';
+                        const countSub = (list) => list ? list.length : 0;
+
                         item.innerHTML = `
-                            <div class="model-name">${model.label}</div>
-                            <div class="model-meta">路径: ${model.path}</div>
-                            <div class="model-actions">
-                                <span class="btn-delete" data-name="${model.value}">删除</span>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div class="model-name" title="路径: ${model.path || '未知'}" style="font-size: 1.1em;">${model.value}</div>
+                                <div style="font-size: 0.8em; color: #888; white-space: nowrap; margin-left: 10px;">${model.created_at || ''}</div>
+                            </div>
+                            
+                            <div class="model-meta" style="margin-top: 8px; font-size: 0.85em; color: #ccc;">
+                                <div style="display: flex; gap: 15px; margin-bottom: 6px; color: #fff;">
+                                    <span title="训练轮数">🔄 Epochs: ${model.epochs || '?'}</span>
+                                    <span title="数据集">📚 ${model.dataset || 'Unknown'}</span>
+                                </div>
+                                <div title="${fmtSub(model.train_subjects)}" style="cursor: help; margin-bottom: 2px;">
+                                    🏋️ 训练集: <span style="color: #67e8f9;">${countSub(model.train_subjects)} subjects</span>
+                                </div>
+                                <div title="${fmtSub(model.val_subjects)}" style="cursor: help; margin-bottom: 2px;">
+                                    🧪 验证集: <span style="color: #67e8f9;">${countSub(model.val_subjects)} subjects</span>
+                                </div>
+                                <div title="${fmtSub(model.test_subjects)}" style="cursor: help;">
+                                    📝 测试集: <span style="color: #67e8f9;">${countSub(model.test_subjects)} subjects</span>
+                                </div>
+                            </div>
+
+                            <div class="model-actions" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 8px; padding-top: 8px; text-align: right;">
+                                <span class="btn-delete" data-name="${model.value}">🗑️ 删除记录</span>
                             </div>
                         `;
                         item.querySelector('.btn-delete').addEventListener('click', async function () {
@@ -416,19 +481,38 @@
         }
 
         // ============ 提交训练表单 ============
+        let trainingTimerInterval;
+
         document.getElementById('trainForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const formData = new FormData(this);
             const trainBtn = document.getElementById('trainBtn');
-            const progressPanel = document.getElementById('trainingProgress');
             const logOutput = document.getElementById('logOutput');
+            const statusText = document.getElementById('trainingStatusText');
+            const timerDisplay = document.getElementById('trainingTimer');
 
-            // 显示进度面板
-            progressPanel.classList.add('active');
+            // 状态重置
             trainBtn.disabled = true;
-            trainBtn.textContent = '⏳ 训练中...';
-            logOutput.textContent = '正在启动训练...\n';
+            trainBtn.textContent = '⏳ 正在训练...';
+            logOutput.textContent = ''; // 清空日志
+            logOutput.classList.add('active');
+
+            statusText.textContent = '(正在训练...)';
+            statusText.style.color = '#22d3ee'; // Cyan
+
+            // 启动计时器
+            const startTime = Date.now();
+            timerDisplay.textContent = '00:00:00';
+            if (trainingTimerInterval) clearInterval(trainingTimerInterval);
+            trainingTimerInterval = setInterval(() => {
+                const diff = Date.now() - startTime;
+                const totalSeconds = Math.floor(diff / 1000);
+                const h = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+                const m = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+                const s = String(totalSeconds % 60).padStart(2, '0');
+                timerDisplay.textContent = `${h}:${m}:${s}`;
+            }, 1000);
 
             try {
                 const res = await fetch('/model_training', {
@@ -438,6 +522,9 @@
                 const data = await res.json();
 
                 if (data.status === 'success') {
+                    statusText.textContent = '(训练完成)';
+                    statusText.style.color = '#4ade80'; // Green
+
                     logOutput.textContent += '✅ 训练完成！\n';
                     if (data.artifacts && data.artifacts.model_name) {
                         logOutput.textContent += `📦 模型已注册: ${data.artifacts.model_name}\n`;
@@ -445,13 +532,18 @@
                     alert('训练完成！');
                     loadModels(); // 刷新模型列表
                 } else {
+                    statusText.textContent = '(训练失败)';
+                    statusText.style.color = '#ef4444'; // Red
                     logOutput.textContent += `❌ 训练失败: ${data.message}\n`;
                     alert('训练失败: ' + data.message);
                 }
             } catch (err) {
+                statusText.textContent = '(请求错误)';
+                statusText.style.color = '#ef4444';
                 logOutput.textContent += `❌ 错误: ${err}\n`;
                 console.error('训练请求失败:', err);
             } finally {
+                clearInterval(trainingTimerInterval);
                 trainBtn.disabled = false;
                 trainBtn.textContent = '🚀 开始训练';
             }
