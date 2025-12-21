@@ -32,7 +32,7 @@
 ### 步骤 1: 安装系统依赖
 
 ```bash
-# Ubuntu / Debian / WSL
+# Ubuntu / Debian
 sudo apt-get update
 sudo apt-get install -y ffmpeg libboost-dev libgl1-mesa-glx libosmesa6-dev portaudio19-dev
 ```
@@ -51,7 +51,19 @@ conda create -n selftalk python=3.8.8
 conda activate selftalk
 ```
 
-### 步骤 4: 安装 MPI-IS/mesh
+### 步骤 4: 安装 PyTorch (CUDA 11.3)
+
+```bash
+pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
+```
+
+### 步骤 5: 安装其他依赖
+
+```bash
+pip install -r requirements.txt
+```
+
+### 步骤 6: 安装 MPI-IS/mesh
 
 ```bash
 # 克隆 mesh 库
@@ -59,20 +71,6 @@ git clone https://github.com/MPI-IS/mesh.git
 cd mesh
 pip install .
 cd ..
-```
-
-> ⚠️ **重要**：必须在安装其他依赖**之前**安装 mesh 库
-
-### 步骤 5: 安装 PyTorch (CUDA 11.3)
-
-```bash
-pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
-```
-
-### 步骤 6: 安装其他依赖
-
-```bash
-pip install -r requirements.txt
 ```
 
 ### 步骤 7: 下载预训练模型(可选，用于快速测试视频生成与实时对话功能，否则需要自行训练模型)
@@ -141,6 +139,8 @@ docker run -d \
 
 ## 📖 使用说明
 
+> **注意**：首次使用请确保能够访问 Hugging Face 的模型仓库。
+
 ### 模型训练
 
 1. 访问「模型训练」页面
@@ -157,12 +157,19 @@ docker run -d \
 4. 选择目标人物 (Subject)
 5. 点击「生成视频」
 
-### 实时对话
+### 人机对话
 
-1. 访问「实时对话」页面
+1. 访问「人机对话」页面
 2. 点击麦克风开始录音
 3. 与 AI 进行语音对话
 4. 系统自动生成虚拟人视频回复
+
+### 实时对话
+
+1. 访问「实时对话」页面
+2. 系统会自动连接语音对话服务（需要麦克风权限）
+3. 直接与 AI 进行实时语音交流
+4. AI 会以语音形式实时回复
 
 ---
 
@@ -188,32 +195,6 @@ TFG-SelfTalk/
 │   └── model_registry.py   # 模型注册管理
 ├── templates/              # HTML 模板
 └── static/                 # 静态资源
-```
-
----
-
-## ❓ 常见问题
-
-### Q: 安装 mesh 库失败
-**A**: 确保已安装 `libboost-dev`：
-```bash
-sudo apt-get install libboost-dev
-```
-
-### Q: OpenGL 相关错误
-**A**: 安装 OSMesa：
-```bash
-sudo apt-get install libosmesa6-dev
-export PYOPENGL_PLATFORM=osmesa
-```
-
-### Q: CUDA 内存不足
-**A**: 尝试减少 batch size 或使用更小的模型
-
-### Q: 视频生成失败
-**A**: 确保已安装 FFmpeg：
-```bash
-sudo apt-get install ffmpeg
 ```
 
 ---
