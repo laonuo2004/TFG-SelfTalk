@@ -12,18 +12,23 @@ dist/
 
 # Data
 *.wav
+static/
 
-SyncTalk/SyncTalk/
+SyncTalk/
 
 GPT-SoVITS/
 
 test_data/
 
-docs/AI/
+docs/
 
 # AutoDL
 
 **/.ipynb_checkpoints/
+
+# Test
+
+tests/
 
 # other
 launch.json
