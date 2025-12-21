@@ -131,8 +131,23 @@ def start_training_async(form_data: Dict[str, Any]) -> Dict[str, Any]:
                         return [x.strip() for x in s.replace(',', ' ').split() if x.strip()]
                     return s
                 
+                # main.py 会在 save_path 后追加 _{feature_dim}_{time} 后缀
+                # 所以需要扫描目录找到实际的保存路径
+                actual_save_dir = None
+                base_name = f"selftalk_{timestamp}"
+                
+                if save_root.exists():
+                    for item in save_root.iterdir():
+                        if item.is_dir() and item.name.startswith(base_name):
+                            actual_save_dir = item
+                            break
+                
+                if actual_save_dir is None:
+                    completed_task.logs.append(f"⚠️ 未找到模型目录，使用预期路径: {save_dir}")
+                    actual_save_dir = save_dir
+                
                 register_model(
-                    path=str(save_dir),
+                    path=str(actual_save_dir),
                     epochs=payload.epochs,
                     dataset=dataset,
                     train_subjects=to_list(payload.train_subjects),
@@ -140,6 +155,7 @@ def start_training_async(form_data: Dict[str, Any]) -> Dict[str, Any]:
                     test_subjects=to_list(payload.test_subjects),
                     name=payload.model_name,
                 )
+                completed_task.logs.append(f"✅ 模型已注册: {actual_save_dir.name}")
             except Exception as e:
                 completed_task.logs.append(f"⚠️ 模型注册失败: {e}")
     
