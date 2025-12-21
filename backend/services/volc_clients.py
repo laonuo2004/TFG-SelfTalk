@@ -740,7 +740,8 @@ class VolcVoiceCloner:
                 # 检查 HTTP 响应中的错误码
                 try:
                     error_data = e.response.json()
-                    error_code = error_data.get("code") or error_data.get("error_code")
+                    base_response = error_data.get("BaseResp")
+                    error_code = base_response.get("code") or base_response.get("error_code") or base_response.get("StatusCode")
                     if error_code == self.QUOTA_EXHAUSTED_ERROR:
                         logger.warning(f"[VoiceClone] speaker_id {speaker_id} 微调次数已耗尽，切换到下一个")
                         self._switch_to_next_speaker()
