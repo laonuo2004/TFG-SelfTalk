@@ -73,7 +73,7 @@ pip install .
 cd ..
 ```
 
-### 步骤 7: 下载预训练模型(可选，用于快速测试视频生成与实时对话功能，否则需要自行训练模型)
+### 步骤 7: 下载预训练模型(可选，用于快速测试视频生成与人机对话功能，否则需要自行训练模型)
 
 1. 从 [Google Drive](https://drive.google.com/file/d/1iwxw4snYndoip2u2Iwe7h-rfPhVJRm2U/view?usp=sharing) 下载 `vocaset.pth`
 2. 将文件放置到 `SelfTalk/vocaset/vocaset.pth`
