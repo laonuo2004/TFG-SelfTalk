@@ -40,7 +40,7 @@ sudo apt-get install -y ffmpeg libboost-dev libgl1-mesa-glx libosmesa6-dev
 ### 步骤 2: 克隆项目
 
 ```bash
-git clone https://github.com/your-repo/TFG-SelfTalk.git
+git clone https://github.com/laonuo2004/TFG-SelfTalk.git
 cd TFG-SelfTalk
 ```
 
@@ -75,7 +75,7 @@ pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --e
 pip install -r requirements.txt
 ```
 
-### 步骤 7: 下载预训练模型
+### 步骤 7: 下载预训练模型(可选，用于快速测试视频生成与实时对话功能，否则需要自行训练模型)
 
 1. 从 [Google Drive](https://drive.google.com/file/d/1iwxw4snYndoip2u2Iwe7h-rfPhVJRm2U/view?usp=sharing) 下载 `vocaset.pth`
 2. 将文件放置到 `SelfTalk/vocaset/vocaset.pth`

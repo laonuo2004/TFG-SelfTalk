@@ -4,3 +4,4 @@ logs/
 
 vocaset/*
 !vocaset/output/
+!vocaset/templates/
