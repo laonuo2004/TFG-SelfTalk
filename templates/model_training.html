@@ -85,7 +85,8 @@
             background: rgba(20, 20, 40, 0.9);
             border-radius: 12px;
             padding: 20px;
-            flex: 1; /* 与 training-progress 各占50% */
+            flex: 1;
+            /* 与 training-progress 各占50% */
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -144,11 +145,13 @@
             background: rgba(20, 20, 40, 0.9);
             border-radius: 12px;
             padding: 16px;
-            flex: 1; /* 与 model-management-panel 各占50% */
+            flex: 1;
+            /* 与 model-management-panel 各占50% */
             display: flex;
             flex-direction: column;
             border: 1px solid rgba(6, 182, 212, 0.1);
-            overflow: hidden; /* 防止内容溢出 */
+            overflow: hidden;
+            /* 防止内容溢出 */
         }
 
         .training-progress.active {
@@ -209,6 +212,14 @@
 
         .model-management-panel {
             width: 90%;
+        }
+
+        /* 右侧表单区域：使用父容器高度百分比，并支持滚动 */
+        .form-section {
+            height: 100%;
+            max-height: 100%;
+            overflow-y: auto;
+            box-sizing: border-box;
         }
     </style>
 </head>
