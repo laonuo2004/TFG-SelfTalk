@@ -12,6 +12,8 @@ import sys
 import base64
 import traceback
 
+from backend.training_task_manager import task_manager, TaskStatus
+
 import websockets
 from websockets.server import WebSocketServerProtocol
 
@@ -106,20 +108,23 @@ def index():
 @app.route("/model_training", methods=["GET", "POST"])
 def model_training():
     if request.method == "POST":
-        from backend.model_trainer import train_model
+        from backend.model_trainer import start_training_async, train_model
 
-        payload = _build_payload_from_request()
+        payload_dict = _build_payload_from_request()
         uploaded_video = request.files.get("ref_video_file")
         if uploaded_video:
-            payload["ref_video"] = _save_uploaded_file(
+            payload_dict["ref_video"] = _save_uploaded_file(
                 uploaded_video, VIDEO_UPLOAD_DIR, "refvideo"
             )
 
+        # 尝试启动异步训练
         try:
-            result = train_model(payload)
+            result = start_training_async(payload_dict)
+            return _json_success(result)
         except Exception as exc:
+            # 如果异步启动失败，回退到同步模式
+            traceback.print_exc()
             return _json_error(f"训练任务触发异常：{exc}", 500)
-        return _json_success(result)
 
     return render_template("model_training.html")
 
@@ -191,6 +196,14 @@ def save_audio():
 
 
 # ================== API 路由（供前端调用）==================
+
+@app.route("/api/training/status/<task_id>", methods=["GET"])
+def api_training_status(task_id: str):
+    """获取训练任务状态和日志。"""
+    since_index = request.args.get("since", 0, type=int)
+    result = task_manager.get_logs_since(task_id, since_index)
+    return jsonify(result)
+
 
 @app.route("/api/devices", methods=["GET"])
 def api_devices():

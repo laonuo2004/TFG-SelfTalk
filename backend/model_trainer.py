@@ -36,7 +36,7 @@ class TrainingPayload:
 
 def train_model(form_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    训练调度入口。
+    训练调度入口（同步模式）。
 
     Args:
         form_data (Dict[str, Any]):
@@ -60,6 +60,102 @@ def train_model(form_data: Dict[str, Any]) -> Dict[str, Any]:
     payload = _normalize_training_payload(form_data)
     handler = _resolve_training_handler(payload.model_choice)
     return handler(payload)
+
+
+def start_training_async(form_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    异步训练入口（返回 task_id，前端轮询状态）。
+    
+    Args:
+        form_data: 来自前端的训练参数
+    
+    Returns:
+        包含 task_id 的字典，前端通过此 ID 查询训练状态
+    """
+    from pathlib import Path
+    from datetime import datetime
+    from backend.training_task_manager import task_manager
+    from backend.selftalk_trainer import _build_config
+    from backend.model_registry import register_model
+    from backend.utils import normalize_device
+    
+    payload = _normalize_training_payload(form_data)
+    
+    # 目前仅支持 SelfTalk 的异步训练
+    if payload.model_choice != "SelfTalk":
+        # 回退到同步模式
+        result = train_model(form_data)
+        return {
+            "status": result.get("status", "failed"),
+            "message": result.get("message", ""),
+            "task_id": None,  # 无 task_id 表示同步完成
+            "sync_result": result,
+        }
+    
+    # 创建任务
+    task = task_manager.create_task()
+    
+    # 构建训练命令
+    PROJECT_ROOT = Path(__file__).resolve().parents[1]
+    SELF_TALK_ROOT = PROJECT_ROOT / "SelfTalk"
+    dataset = payload.dataset or "vocaset"
+    
+    # 生成保存路径（与 selftalk_trainer.py 保持一致）
+    save_root = SELF_TALK_ROOT / dataset / "save"
+    save_root.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    save_dir = save_root / f"selftalk_{timestamp}"
+    
+    cmd = [
+        "python", "-u", "main.py",  # -u 禁用输出缓冲
+        "--dataset", dataset,
+        "--train_subjects", payload.train_subjects or "",
+        "--val_subjects", payload.val_subjects or "",
+        "--max_epoch", str(payload.epochs),
+        "--save_path", str(save_dir),  # 添加 save_path 参数
+        "--device", normalize_device(payload.gpu_choice),
+    ]
+    
+    if payload.test_subjects:
+        cmd.extend(["--test_subjects", payload.test_subjects])
+    
+    # 定义训练完成回调
+    def on_training_complete(completed_task):
+        if completed_task.status.value == "completed":
+            # 注册模型
+            try:
+                def to_list(s):
+                    if not s:
+                        return []
+                    if isinstance(s, str):
+                        return [x.strip() for x in s.replace(',', ' ').split() if x.strip()]
+                    return s
+                
+                register_model(
+                    path=str(save_dir),
+                    epochs=payload.epochs,
+                    dataset=dataset,
+                    train_subjects=to_list(payload.train_subjects),
+                    val_subjects=to_list(payload.val_subjects),
+                    test_subjects=to_list(payload.test_subjects),
+                    name=payload.model_name,
+                )
+            except Exception as e:
+                completed_task.logs.append(f"⚠️ 模型注册失败: {e}")
+    
+    # 启动异步训练
+    task_manager.start_training(
+        task=task,
+        cmd=cmd,
+        cwd=SELF_TALK_ROOT,
+        on_complete=on_training_complete,
+    )
+    
+    return {
+        "status": "started",
+        "message": "训练任务已启动",
+        "task_id": task.task_id,
+    }
 
 
 def _normalize_training_payload(form_data: Dict[str, Any]) -> TrainingPayload:

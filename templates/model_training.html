@@ -57,19 +57,35 @@
         }
 
         /* 模型管理面板样式 */
+
+        /* 覆盖 app.css 中的样式，固定容器高度 */
+        .video-page-container {
+            height: 80vh;
+            /* 固定高度为视口的80% */
+            min-height: 600px;
+            max-height: 950px;
+        }
+
+        .video-display {
+            height: 100%;
+            overflow: hidden;
+            /* 防止内容溢出 */
+        }
+
         .left-panel-container {
             display: flex;
             flex-direction: column;
             height: 100%;
             gap: 20px;
+            overflow: hidden;
+            /* 防止内容溢出 */
         }
 
         .model-management-panel {
             background: rgba(20, 20, 40, 0.9);
             border-radius: 12px;
             padding: 20px;
-            flex: 4;
-            /* 占据更多空间 (80%) */
+            flex: 1; /* 与 training-progress 各占50% */
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -128,12 +144,11 @@
             background: rgba(20, 20, 40, 0.9);
             border-radius: 12px;
             padding: 16px;
-            /* 稍微减小 padding */
-            flex: 1;
-            /* 占据较少空间 (20%) */
+            flex: 1; /* 与 model-management-panel 各占50% */
             display: flex;
             flex-direction: column;
             border: 1px solid rgba(6, 182, 212, 0.1);
+            overflow: hidden; /* 防止内容溢出 */
         }
 
         .training-progress.active {
@@ -163,8 +178,27 @@
             flex: 1;
             overflow-y: auto;
             color: #22d3ee;
-            /* Cyan text */
-            line-height: 1.4;
+            line-height: 1.5;
+            text-align: left;
+            /* 左对齐 */
+            white-space: pre-wrap;
+            /* 保留空格和换行 */
+            word-break: break-word;
+            min-height: 150px;
+        }
+
+        /* tqdm 进度条独立行 */
+        .progress-bar-line {
+            background: rgba(6, 182, 212, 0.1);
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-top: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: #67e8f9;
+            white-space: nowrap;
+            overflow-x: auto;
+            flex-shrink: 0;
         }
 
         .video-display {
@@ -243,6 +277,7 @@
                                     style="font-family: monospace; color: #06b6d4; font-weight: bold;">00:00:00</div>
                             </div>
                             <div class="log-output" id="logOutput">等待训练开始...</div>
+                            <div class="progress-bar-line" id="progressBarLine" style="display: none;"></div>
                         </div>
                     </div>
                 </div>
@@ -482,6 +517,9 @@
 
         // ============ 提交训练表单 ============
         let trainingTimerInterval;
+        let trainingPollingInterval;
+        let currentTaskId = null;
+        let currentLogIndex = 0;
 
         document.getElementById('trainForm').addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -491,15 +529,18 @@
             const logOutput = document.getElementById('logOutput');
             const statusText = document.getElementById('trainingStatusText');
             const timerDisplay = document.getElementById('trainingTimer');
+            const progressBarLine = document.getElementById('progressBarLine');
 
             // 状态重置
             trainBtn.disabled = true;
             trainBtn.textContent = '⏳ 正在训练...';
-            logOutput.textContent = ''; // 清空日志
-            logOutput.classList.add('active');
+            logOutput.textContent = '正在启动训练任务...\n';
+            progressBarLine.style.display = 'none';
+            progressBarLine.textContent = '';
+            currentLogIndex = 0;
 
-            statusText.textContent = '(正在训练...)';
-            statusText.style.color = '#22d3ee'; // Cyan
+            statusText.textContent = '(启动中...)';
+            statusText.style.color = '#fbbf24'; // Yellow
 
             // 启动计时器
             const startTime = Date.now();
@@ -515,39 +556,113 @@
             }, 1000);
 
             try {
+                // 发送训练请求
                 const res = await fetch('/model_training', {
                     method: 'POST',
                     body: formData
                 });
                 const data = await res.json();
 
-                if (data.status === 'success') {
-                    statusText.textContent = '(训练完成)';
-                    statusText.style.color = '#4ade80'; // Green
+                if (data.status === 'started' && data.task_id) {
+                    // 异步模式：启动轮询
+                    currentTaskId = data.task_id;
+                    statusText.textContent = '(正在训练...)';
+                    statusText.style.color = '#22d3ee'; // Cyan
+                    logOutput.textContent = '训练任务已启动，正在加载日志...\n';
 
-                    logOutput.textContent += '✅ 训练完成！\n';
-                    if (data.artifacts && data.artifacts.model_name) {
-                        logOutput.textContent += `📦 模型已注册: ${data.artifacts.model_name}\n`;
-                    }
-                    alert('训练完成！');
-                    loadModels(); // 刷新模型列表
+                    startPolling(currentTaskId, logOutput, statusText, progressBarLine, trainBtn);
+                } else if (data.status === 'success' || data.sync_result) {
+                    // 同步模式：直接完成
+                    onTrainingComplete(true, data.message || '训练完成', logOutput, statusText, trainBtn);
                 } else {
-                    statusText.textContent = '(训练失败)';
-                    statusText.style.color = '#ef4444'; // Red
-                    logOutput.textContent += `❌ 训练失败: ${data.message}\n`;
-                    alert('训练失败: ' + data.message);
+                    // 失败
+                    onTrainingComplete(false, data.message || '训练失败', logOutput, statusText, trainBtn);
                 }
             } catch (err) {
-                statusText.textContent = '(请求错误)';
-                statusText.style.color = '#ef4444';
-                logOutput.textContent += `❌ 错误: ${err}\n`;
+                onTrainingComplete(false, `请求错误: ${err}`, logOutput, statusText, trainBtn);
                 console.error('训练请求失败:', err);
-            } finally {
-                clearInterval(trainingTimerInterval);
-                trainBtn.disabled = false;
-                trainBtn.textContent = '🚀 开始训练';
             }
         });
+
+        // ============ 轮询训练状态 ============
+        function startPolling(taskId, logOutput, statusText, progressBarLine, trainBtn) {
+            if (trainingPollingInterval) clearInterval(trainingPollingInterval);
+
+            trainingPollingInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/training/status/${taskId}?since=${currentLogIndex}`);
+                    const data = await res.json();
+
+                    if (data.status === 'not_found') {
+                        stopPolling();
+                        onTrainingComplete(false, '任务不存在', logOutput, statusText, trainBtn);
+                        return;
+                    }
+
+                    // 追加新日志
+                    if (data.logs && data.logs.length > 0) {
+                        data.logs.forEach(line => {
+                            logOutput.textContent += line + '\n';
+                        });
+                        currentLogIndex = data.log_index;
+                        // 自动滚动到底部
+                        logOutput.scrollTop = logOutput.scrollHeight;
+                    }
+
+                    // 更新 tqdm 进度条
+                    if (data.progress) {
+                        progressBarLine.textContent = data.progress;
+                        progressBarLine.style.display = 'block';
+                    } else {
+                        progressBarLine.style.display = 'none';
+                    }
+
+                    // 检查完成状态
+                    if (data.status === 'completed') {
+                        stopPolling();
+                        onTrainingComplete(true, '训练完成', logOutput, statusText, trainBtn);
+                        loadModels(); // 刷新模型列表
+                    } else if (data.status === 'failed') {
+                        stopPolling();
+                        onTrainingComplete(false, data.error || '训练失败', logOutput, statusText, trainBtn);
+                    }
+                } catch (err) {
+                    console.error('轮询失败:', err);
+                }
+            }, 1000); // 每秒轮询
+        }
+
+        function stopPolling() {
+            if (trainingPollingInterval) {
+                clearInterval(trainingPollingInterval);
+                trainingPollingInterval = null;
+            }
+            if (trainingTimerInterval) {
+                clearInterval(trainingTimerInterval);
+                trainingTimerInterval = null;
+            }
+        }
+
+        function onTrainingComplete(success, message, logOutput, statusText, trainBtn) {
+            stopPolling();
+
+            if (success) {
+                statusText.textContent = '(训练完成)';
+                statusText.style.color = '#4ade80'; // Green
+                logOutput.textContent += `\n✅ ${message}\n`;
+            } else {
+                statusText.textContent = '(训练失败)';
+                statusText.style.color = '#ef4444'; // Red
+                logOutput.textContent += `\n❌ ${message}\n`;
+            }
+
+            trainBtn.disabled = false;
+            trainBtn.textContent = '🚀 开始训练';
+
+            // 隐藏进度条
+            const progressBarLine = document.getElementById('progressBarLine');
+            progressBarLine.style.display = 'none';
+        }
     </script>
 </body>
 

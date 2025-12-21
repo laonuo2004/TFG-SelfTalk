@@ -171,7 +171,7 @@
                         <input type="hidden" name="recording_path" id="recordingPathInput">
 
                         <button type="submit" class="generate-btn" id="startChatBtn" disabled>
-                            Waiting for Recording...
+                            🎤 等待录音完成...
                         </button>
                     </form>
                 </div>
@@ -487,7 +487,7 @@
 
             const btn = document.getElementById('startChatBtn');
             btn.disabled = true;
-            btn.textContent = '⏳ 思考与生成中...';
+            btn.textContent = '⏳ 生成中...(预计2-3分钟)';
             statusMessage.textContent = '🤔 AI 正在处理您的请求...';
 
             try {

@@ -1,8 +1,23 @@
+# ============ 警告抑制 ============
+# 必须在最顶端，其他 import 之前
+import warnings
+import os
+import logging
+
+# 抑制常见的无害警告
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+# 抑制 transformers 库的信息日志（如模型权重加载信息）
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+logging.getLogger("transformers").setLevel(logging.ERROR)
+
+# ============ 原有导入 ============
 import numpy as np
 import argparse
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-import os
 from transformers import Wav2Vec2CTCTokenizer, Wav2Vec2Processor
 import torch
 import torch.nn as nn
