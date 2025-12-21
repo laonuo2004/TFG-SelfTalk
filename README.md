@@ -82,13 +82,15 @@ pip install -r requirements.txt
 
 ### 步骤 8: 准备 VOCASET 数据集
 
-1. 从 [VOCA 官网](https://voca.is.tue.mpg.de/) 申请并下载数据集
-2. 将以下文件放入 `SelfTalk/vocaset/` 目录：
+1. 下载 [FLAME_sample.ply](https://github.com/TimoBolkart/voca/tree/master/template)，存放到 `SelfTalk/vocaset/templates/` 目录
+2. 从 [VOCA 官网](https://voca.is.tue.mpg.de/) 申请并下载数据集，包括 Template Meshes 与 Training Data
+3. 将 `templates.zip` 解压到 `SelfTalk/vocaset/templates/` 目录
+4. 将以下文件放入 `SelfTalk/vocaset/` 目录：
    - `data_verts.npy`
    - `raw_audio_fixed.pkl`
    - `templates.pkl`
    - `subj_seq_to_idx.pkl`
-3. 处理数据：
+5. 处理数据：
    ```bash
    cd SelfTalk/vocaset
    python process_voca_data.py
