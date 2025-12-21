@@ -88,8 +88,7 @@ pip install -r requirements.txt
    - `raw_audio_fixed.pkl`
    - `templates.pkl`
    - `subj_seq_to_idx.pkl`
-3. 从 [voca 模板](https://github.com/TimoBolkart/voca/tree/master/template) 下载 `FLAME_sample.ply` 放入 `SelfTalk/vocaset/`
-4. 处理数据：
+3. 处理数据：
    ```bash
    cd SelfTalk/vocaset
    python process_voca_data.py

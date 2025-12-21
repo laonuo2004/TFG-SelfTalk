@@ -24,6 +24,8 @@ Jinja2==3.1.6
 # ============ Audio Processing ============
 soundfile==0.13.1
 audioread==3.0.1
+PyAudio==0.2.14
+ffmpeg==1.4
 
 # ============ Visualization & Rendering ============
 pyglet==2.1.10
@@ -44,6 +46,7 @@ tokenizers==0.13.3
 filelock==3.16.1
 packaging==25.0
 regex==2024.11.6
+config==0.5.1
 
 # ============ Note ============
 # psbody-mesh (MPI-IS/mesh) must be installed separately:
