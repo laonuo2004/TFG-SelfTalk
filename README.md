@@ -34,7 +34,7 @@
 ```bash
 # Ubuntu / Debian / WSL
 sudo apt-get update
-sudo apt-get install -y ffmpeg libboost-dev libgl1-mesa-glx libosmesa6-dev
+sudo apt-get install -y ffmpeg libboost-dev libgl1-mesa-glx libosmesa6-dev portaudio19-dev
 ```
 
 ### 步骤 2: 克隆项目
