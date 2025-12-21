@@ -4,6 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <title>视频生成界面 - SelfTalk</title>
+    <script>
+        (function () {
+            try {
+                var storedTheme = localStorage.getItem('preferredTheme');
+                if (storedTheme === 'light') {
+                    document.documentElement.classList.add('theme-light');
+                }
+            } catch (e) { }
+        })();
+    </script>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
@@ -73,9 +84,12 @@
             <a href="/realtime_talk.html">实时对话</a>
             <a href="/about">关于我们</a>
         </nav>
-        <button class="nav-cta" onclick="window.location.href='/'">
-            返回首页
-        </button>
+        <div class="nav-actions">
+            <button class="theme-toggle" type="button" aria-label="一键切换主题">切换样式</button>
+            <button class="nav-cta" onclick="window.location.href='/'">
+                        返回首页
+                    </button>
+        </div>
     </header>
 
     <!-- 页面内容 -->
@@ -85,7 +99,7 @@
             <div class="hero-card">
                 <div class="badge">
                     <div class="badge-dot"></div>
-                    <span>VIDEO · SELFTALK GENERATION</span>
+                    <span>VIDEO · SelfTalk Talking System</span>
                 </div>
                 <h1 class="headline">视频生成界面 · <span>VIDEO GENERATION</span></h1>
                 <p class="subline">
@@ -322,6 +336,7 @@
             }
         });
     </script>
+    <script defer src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
 </body>
 
 </html>

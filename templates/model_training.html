@@ -4,6 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <title>模型训练界面 - SelfTalk</title>
+    <script>
+        (function () {
+            try {
+                var storedTheme = localStorage.getItem('preferredTheme');
+                if (storedTheme === 'light') {
+                    document.documentElement.classList.add('theme-light');
+                }
+            } catch (e) { }
+        })();
+    </script>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
@@ -126,6 +137,17 @@
             margin-top: 4px;
         }
 
+        .model-item .model-meta-line {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        .model-item .count-value {
+            color: #67e8f9;
+        }
+
         .model-item .model-actions {
             margin-top: 8px;
         }
@@ -242,9 +264,12 @@
             <a href="/realtime_talk.html">实时对话</a>
             <a href="/about">关于我们</a>
         </nav>
-        <button class="nav-cta" onclick="window.location.href='/'">
-            返回首页
-        </button>
+        <div class="nav-actions">
+            <button class="theme-toggle" type="button" aria-label="一键切换主题">切换样式</button>
+            <button class="nav-cta" onclick="window.location.href='/'">
+                        返回首页
+                    </button>
+        </div>
     </header>
 
     <!-- 页面内容 -->
@@ -254,7 +279,7 @@
             <div class="hero-card">
                 <div class="badge">
                     <div class="badge-dot"></div>
-                    <span>MODEL · SELFTALK TRAINING SYSTEM</span>
+                    <span>MODEL · SelfTalk Talking System</span>
                 </div>
                 <h1 class="headline">模型训练界面 · <span>TRAIN</span></h1>
                 <p class="subline">
@@ -472,19 +497,19 @@
                                 <div style="font-size: 0.8em; color: #888; white-space: nowrap; margin-left: 10px;">${model.created_at || ''}</div>
                             </div>
                             
-                            <div class="model-meta" style="margin-top: 8px; font-size: 0.85em; color: #ccc;">
-                                <div style="display: flex; gap: 15px; margin-bottom: 6px; color: #fff;">
+                            <div class="model-meta" style="margin-top: 8px; font-size: 0.85em;">
+                                <div class="model-meta-line" style="display: flex; gap: 15px; margin-bottom: 6px;">
                                     <span title="训练轮数">🔄 Epochs: ${model.epochs || '?'}</span>
                                     <span title="数据集">📚 ${model.dataset || 'Unknown'}</span>
                                 </div>
                                 <div title="${fmtSub(model.train_subjects)}" style="cursor: help; margin-bottom: 2px;">
-                                    🏋️ 训练集: <span style="color: #67e8f9;">${countSub(model.train_subjects)} subjects</span>
+                                    🏋️ 训练集: <span class="count-value">${countSub(model.train_subjects)} subjects</span>
                                 </div>
                                 <div title="${fmtSub(model.val_subjects)}" style="cursor: help; margin-bottom: 2px;">
-                                    🧪 验证集: <span style="color: #67e8f9;">${countSub(model.val_subjects)} subjects</span>
+                                    🧪 验证集: <span class="count-value">${countSub(model.val_subjects)} subjects</span>
                                 </div>
                                 <div title="${fmtSub(model.test_subjects)}" style="cursor: help;">
-                                    📝 测试集: <span style="color: #67e8f9;">${countSub(model.test_subjects)} subjects</span>
+                                    📝 测试集: <span class="count-value">${countSub(model.test_subjects)} subjects</span>
                                 </div>
                             </div>
 
@@ -675,6 +700,7 @@
             progressBarLine.style.display = 'none';
         }
     </script>
+    <script defer src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
 </body>
 
 </html>

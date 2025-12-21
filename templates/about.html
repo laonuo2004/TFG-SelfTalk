@@ -3,7 +3,18 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>DATA HAMMER GROUP TALKING SYSTEM · 关于我们</title>
+    <title>SelfTalk Intelligence Lab Talking System · 关于我们</title>
+    <script>
+        (function () {
+            try {
+                var storedTheme = localStorage.getItem('preferredTheme');
+                if (storedTheme === 'light') {
+                    document.documentElement.classList.add('theme-light');
+                }
+            } catch (e) { }
+        })();
+    </script>
+
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -18,7 +29,7 @@
         <div class="nav-logo">
             <div class="nav-logo-mark"></div>
             <div>
-                <div class="nav-logo-text-main">DATA HAMMER GROUP</div>
+                <div class="nav-logo-text-main">SelfTalk Intelligence Lab</div>
                 <div class="nav-logo-text-sub">Talking System</div>
             </div>
         </div>
@@ -30,9 +41,12 @@
               <a href="/realtime_talk.html">实时对话</a>
               <a href="{{ url_for('about') }}">关于我们</a>
         </div>
-        <a href="{{ url_for('index') }}" class="nav-cta">
-            返回首页
-        </a>
+        <div class="nav-actions">
+            <button class="theme-toggle" type="button" aria-label="一键切换主题">切换样式</button>
+            <a href="{{ url_for('index') }}" class="nav-cta">
+                返回首页
+            </a>
+        </div>
     </div>
 
     <div class="page-wrapper">
@@ -41,11 +55,11 @@
             <div class="hero-card">
                 <div class="badge">
                     <div class="badge-dot"></div>
-                    <span>ABOUT · DATA HAMMER TALKING SYSTEM</span>
+                    <span>ABOUT · SelfTalk Talking System</span>
                 </div>
                 <h1 class="headline">关于我们 · <span>PROJECT MEMBERS</span></h1>
                 <p class="subline">
-                    DATA HAMMER Talking System 由 7 名成员共同完成，覆盖前端界面设计、语音识别、语音合成、模型训练、
+                    SelfTalk Talking System 由 7 名成员共同完成，覆盖前端界面设计、语音识别、语音合成、模型训练、
                     部署运维和文档展示等环节。本页面仅展示项目成员及分工，便于老师快速了解小组在系统中的角色划分。
                 </p>
             </div>
@@ -259,10 +273,11 @@
             </div>
 
             <div class="footer">
-                © 2025 DATA HAMMER GROUP · SelfTalk Project
+                © 2025 SelfTalk Intelligence Lab · SelfTalk Project
             </div>
         </div>
     </div>
+    <script defer src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
 </body>
 
 </html>

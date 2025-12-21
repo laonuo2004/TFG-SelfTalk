@@ -3,7 +3,17 @@
     
 <head>
     <meta charset="UTF-8">
-    <title>DATA HAMMER GROUP TALKING SYSTEM</title>
+    <title>SelfTalk Intelligence Lab Talking System</title>
+    <script>
+        (function () {
+            try {
+                var storedTheme = localStorage.getItem('preferredTheme');
+                if (storedTheme === 'light') {
+                    document.documentElement.classList.add('theme-light');
+                }
+            } catch (e) { }
+        })();
+    </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -16,7 +26,7 @@
         <div class="nav-logo">
             <div class="nav-logo-mark"></div>
             <div>
-                <div class="nav-logo-text-main">DATA HAMMER GROUP</div>
+                <div class="nav-logo-text-main">SelfTalk Intelligence Lab</div>
                 <div class="nav-logo-text-sub">Intelligent Talking System</div>
             </div>
         </div>
@@ -28,9 +38,12 @@
             <a href="/realtime_talk.html">实时对话</a>
             <a href="/about">关于我们</a>
         </nav>
-        <button class="nav-cta" onclick="window.location.href='/chat_system'">
-            立即体验对话
-        </button>
+        <div class="nav-actions">
+            <button class="theme-toggle" type="button" aria-label="一键切换主题">切换样式</button>
+            <button class="nav-cta" onclick="window.location.href='/chat_system'">
+                立即体验对话
+            </button>
+        </div>
     </header>
 
     <!-- 页面内容 -->
@@ -40,11 +53,11 @@
             <section class="hero-card">
                 <div class="badge">
                     <span class="badge-dot"></span>
-                    DATA HAMMER TALKING SYSTEM · 智能语音交互平台
+                    SelfTalk Talking System 
                 </div>
 
                 <h1 class="headline">
-                    DATA HAMMER <span>GROUP</span><br>
+                    SelfTalk <span>Lab</span><br>
                     TALKING SYSTEM
                 </h1>
 
@@ -92,5 +105,6 @@
             </section>
         </div>
     </main>
+    <script defer src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
 </body>
 </html>

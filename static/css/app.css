@@ -13,6 +13,28 @@ label {
     text-align: left;
 }
 
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.theme-toggle {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 229, 255, 0.5);
+    background: rgba(0, 0, 0, 0.15);
+    color: #e6faff;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.theme-toggle:hover {
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+}
+
         /* 顶部导航条（与 index.html 保持一致） */
         .nav {
             display: flex;
@@ -2094,4 +2116,319 @@ body.realtime-page .video-page-container {
             box-shadow: 0 0 10px rgba(0, 229, 255, 0.9);
         }
         /* 到此 */
-    
+
+/* ===== ??????+?? ===== */
+html.theme-light body.main-bg {
+    background: linear-gradient(180deg, #fefefe 0%, #ffe5f1 35%, #e8fbff 100%);
+    color: #1f2933;
+}
+
+html.theme-light .nav {
+    background: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid rgba(236, 72, 153, 0.25);
+    box-shadow: 0 10px 30px rgba(251, 113, 133, 0.12);
+}
+
+html.theme-light .nav-logo-mark {
+    background: conic-gradient(from 160deg, #f472b6, #38bdf8, #f472b6);
+    box-shadow: 0 0 18px rgba(244, 114, 182, 0.5);
+}
+
+html.theme-light .nav-links a {
+    color: #0f172a;
+}
+
+html.theme-light .nav-links a::after {
+    background: linear-gradient(90deg, #fb7185, #06b6d4);
+}
+
+html.theme-light .nav-cta {
+    color: #103850;
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    background: linear-gradient(120deg, #fda4af, #5eead4);
+    box-shadow: 0 8px 18px rgba(94, 234, 212, 0.35);
+}
+
+html.theme-light .nav-cta:hover {
+    background: linear-gradient(120deg, #fb7185, #22d3ee);
+    box-shadow: 0 12px 24px rgba(251, 113, 133, 0.25);
+}
+
+html.theme-light .theme-toggle {
+    border: 1px solid rgba(244, 114, 182, 0.5);
+    background: rgba(255, 255, 255, 0.85);
+    color: #be185d;
+    box-shadow: 0 6px 16px rgba(244, 114, 182, 0.25);
+}
+
+html.theme-light .theme-toggle:hover {
+    background: #fff5fa;
+    box-shadow: 0 8px 20px rgba(244, 114, 182, 0.35);
+    color: #9d174d;
+}
+
+html.theme-light .hero-card,
+html.theme-light .contact-card,
+html.theme-light .video-page-container,
+html.theme-light .form-section,
+html.theme-light .voice-recorder,
+html.theme-light .dialog-card,
+html.theme-light .member-card {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(236, 72, 153, 0.12);
+    box-shadow: 0 25px 50px rgba(15, 23, 42, 0.08);
+}
+
+html.theme-light .model-management-panel,
+html.theme-light .training-progress,
+html.theme-light .multi-select-dropdown {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(236, 72, 153, 0.12);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.07);
+}
+
+html.theme-light .model-item {
+    background: rgba(249, 250, 251, 0.9);
+    border-left-color: #fb7185;
+}
+
+html.theme-light .model-item .model-name,
+html.theme-light .panel-title,
+html.theme-light .progress-title {
+    color: #0f172a;
+}
+
+html.theme-light .model-item .model-meta,
+html.theme-light .model-item .model-actions,
+html.theme-light .multi-select-item.group-header {
+    color: #475569;
+}
+
+html.theme-light .model-item .model-meta-line,
+html.theme-light .model-item .model-meta-line span {
+    color: #475569 !important;
+}
+
+html.theme-light .model-item .count-value {
+    color: #0ea5e9 !important;
+}
+
+html.theme-light .multi-select-dropdown {
+    border: 1px solid rgba(236, 72, 153, 0.12);
+}
+
+html.theme-light .multi-select-item {
+    color: #0f172a;
+}
+
+html.theme-light .multi-select-item:hover {
+    background: rgba(236, 72, 153, 0.1);
+}
+
+html.theme-light .log-output {
+    background: rgba(248, 250, 252, 0.95);
+    border-color: rgba(236, 72, 153, 0.2);
+    color: #0f172a;
+}
+
+html.theme-light .model-item .btn-delete {
+    color: #dc2626;
+}
+
+html.theme-light .badge {
+    background: rgba(249, 168, 212, 0.25);
+    border: 1px solid rgba(236, 72, 153, 0.35);
+    color: #af1554;
+}
+
+html.theme-light .badge-dot {
+    background: radial-gradient(circle, #fb7185, #5eead4);
+    box-shadow: 0 0 10px rgba(251, 113, 133, 0.6);
+}
+
+html.theme-light .headline span {
+    color: #ec4899;
+}
+
+html.theme-light .subline,
+html.theme-light .team-card-desc,
+html.theme-light .member-intro,
+html.theme-light .small-hint {
+    color: rgba(71, 85, 105, 0.95);
+}
+
+html.theme-light .page-subtitle,
+html.theme-light .recorder-title,
+html.theme-light .status-message,
+html.theme-light .volume-control label,
+html.theme-light .audio-hint,
+html.theme-light .inline-text {
+    color: rgba(71, 85, 105, 0.95);
+}
+
+html.theme-light .guide-pane {
+    color: #1f2937;
+}
+
+html.theme-light .guide-pane h4 {
+    color: #0f172a;
+}
+
+html.theme-light .guide-highlight {
+    color: #0f172a;
+    border-color: rgba(236, 72, 153, 0.35);
+    background: rgba(249, 168, 212, 0.25);
+}
+
+html.theme-light .member-photo {
+    background: linear-gradient(135deg, #fbe8ef, #e0fbff);
+    color: #0f172a;
+}
+
+html.theme-light .team-card-title {
+    color: #0f172a;
+}
+
+html.theme-light .member-name {
+    color: #0f172a;
+}
+
+html.theme-light .member-major {
+    color: #475569;
+}
+
+html.theme-light .member-role-tag,
+html.theme-light .skill-chip {
+    background: rgba(250, 229, 244, 0.8);
+    border: 1px solid rgba(236, 72, 153, 0.3);
+    color: #9d174d;
+}
+
+html.theme-light .guide-step,
+html.theme-light .guide-step p,
+html.theme-light .guide-step li {
+    color: #1f2937;
+}
+
+html.theme-light .guide-step strong {
+    color: #db2777;
+}
+
+html.theme-light select,
+html.theme-light input,
+html.theme-light textarea {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(236, 72, 153, 0.25);
+    color: #334155;
+}
+
+html.theme-light select:focus,
+html.theme-light input:focus,
+html.theme-light textarea:focus {
+    border-color: #f472b6;
+    box-shadow: 0 0 0 1px rgba(244, 114, 182, 0.4);
+}
+
+html.theme-light label {
+    color: #475569;
+}
+
+html.theme-light .generate-btn,
+html.theme-light .primary-btn {
+    background: linear-gradient(120deg, #fb7185, #5eead4);
+    color: #0f172a;
+    box-shadow: 0 12px 24px rgba(251, 113, 133, 0.2);
+}
+
+html.theme-light .secondary-btn {
+    background: rgba(248, 250, 252, 0.9);
+    border: 1px solid rgba(203, 213, 225, 0.8);
+    color: #475569;
+}
+
+html.theme-light .record-btn {
+    background: linear-gradient(120deg, #fb7185, #f472b6);
+    box-shadow: 0 10px 20px rgba(251, 113, 133, 0.35);
+}
+
+html.theme-light .record-btn.recording {
+    background: linear-gradient(120deg, #34d399, #5eead4);
+    box-shadow: 0 10px 20px rgba(94, 234, 212, 0.3);
+}
+
+html.theme-light .status-pill,
+html.theme-light .tab-menu {
+    background: rgba(248, 250, 252, 0.85);
+    border: 1px solid rgba(203, 213, 225, 0.8);
+    color: #475569;
+}
+
+html.theme-light .tab-button {
+    color: #64748b;
+}
+
+html.theme-light .tab-button.active {
+    background: rgba(251, 113, 133, 0.2);
+    color: #be123c;
+    box-shadow: none;
+}
+
+html.theme-light .guide-step {
+    background: rgba(248, 250, 252, 0.9);
+    border: 1px solid rgba(203, 213, 225, 0.7);
+}
+
+html.theme-light .chat-msg .content {
+    color: #334155;
+}
+
+html.theme-light .chat-msg span.role {
+    color: #be185d;
+}
+
+html.theme-light .footer {
+    color: rgba(15, 23, 42, 0.6);
+}
+
+html.theme-light .nav-logo-text-main {
+    color: #0f172a;
+}
+
+html.theme-light .nav-logo-text-sub {
+    color: #475569;
+}
+
+html.theme-light .contact-title,
+html.theme-light .contact-title span {
+    color: #0f172a;
+}
+
+html.theme-light .contact-list div {
+    color: #475569;
+}
+
+html.theme-light .contact-list strong {
+    color: #0f172a;
+}
+
+html.theme-light .hero-actions button span.label-sub {
+    color: #0f172a;
+    opacity: 0.75;
+}
+
+html.theme-light .hero-actions button {
+    background: linear-gradient(120deg, #ffe4ec, #ffd7f0);
+    color: #a21caf;
+    box-shadow: 0 10px 22px rgba(252, 231, 243, 0.7);
+}
+
+html.theme-light .hero-actions button:hover {
+    background: linear-gradient(120deg, #ffd7f0, #ffc4e6);
+    box-shadow: 0 14px 28px rgba(255, 196, 230, 0.7);
+}
+
+html.theme-light .hero-actions button:active {
+    background: linear-gradient(120deg, #ffc4e6, #ffb1dd);
+    box-shadow: 0 8px 16px rgba(255, 177, 221, 0.65);
+}
+
