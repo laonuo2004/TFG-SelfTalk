@@ -18,6 +18,45 @@ from typing import Any, Dict, List, Optional
 # 模型注册表存储路径
 _REGISTRY_FILE = Path(__file__).resolve().parents[1] / "models.json"
 
+# 项目根目录（用于相对路径转换）
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _to_relative_path(absolute_path: str) -> str:
+    """
+    将绝对路径转换为相对于项目根目录的相对路径。
+    
+    Args:
+        absolute_path: 绝对路径字符串
+    
+    Returns:
+        相对路径字符串（以 / 为分隔符，跨平台兼容）
+    """
+    try:
+        abs_path = Path(absolute_path).resolve()
+        rel_path = abs_path.relative_to(_PROJECT_ROOT)
+        return rel_path.as_posix()  # 使用 / 分隔符，跨平台兼容
+    except ValueError:
+        # 如果无法转换（不在项目目录下），保留原路径
+        return absolute_path
+
+
+def _to_absolute_path(relative_path: str) -> str:
+    """
+    将相对路径转换为绝对路径。
+    
+    Args:
+        relative_path: 相对于项目根目录的路径
+    
+    Returns:
+        绝对路径字符串
+    """
+    # 如果已经是绝对路径，直接返回
+    if os.path.isabs(relative_path):
+        return relative_path
+    
+    return str((_PROJECT_ROOT / relative_path).resolve())
+
 
 @dataclass
 class ModelInfo:
@@ -129,7 +168,7 @@ def register_model(
     
     model = ModelInfo(
         name=name,
-        path=path,
+        path=_to_relative_path(path),  # 保存为相对路径
         created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         epochs=epochs,
         dataset=dataset,
@@ -172,15 +211,15 @@ def get_models_for_dropdown() -> List[Dict[str, Any]]:
     获取模型列表，供前端下拉选择使用。
     
     Returns:
-        模型列表，包含完整信息以供前端展示
+        模型列表，包含完整信息以供前端展示（路径转换为绝对路径）
     """
     models = list_models()
     result = []
     for model in models:
         result.append({
-            "value": model.name,  # 实际上也是 model.name
+            "value": model.name,
             "label": f"{model.name} ({model.created_at})",
-            "path": model.path,
+            "path": _to_absolute_path(model.path),  # 转换为绝对路径
             "created_at": model.created_at,
             "epochs": model.epochs,
             "dataset": model.dataset,
