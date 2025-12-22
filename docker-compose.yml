@@ -29,8 +29,9 @@ services:
       # VOCASET 数据集 (必需)
       - ./SelfTalk/vocaset/wav:/app/SelfTalk/vocaset/wav:ro
       - ./SelfTalk/vocaset/vertices_npy:/app/SelfTalk/vocaset/vertices_npy:ro
-      - ./SelfTalk/vocaset/templates:/app/SelfTalk/vocaset/templates:ro
-      - ./SelfTalk/vocaset/templates.pkl:/app/SelfTalk/vocaset/templates.pkl:ro
+
+      # 预训练模型 (约 3GB)
+      - ./SelfTalk/vocaset/vocaset.pth:/app/SelfTalk/vocaset/vocaset.pth:ro
 
       # 模型保存目录 (训练输出)
       - ./SelfTalk/vocaset/save:/app/SelfTalk/vocaset/save

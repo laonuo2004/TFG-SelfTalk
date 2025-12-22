@@ -49,8 +49,9 @@ SelfTalk/vocaset/vertices_npy/
 SelfTalk/vocaset/save/
 SelfTalk/vocaset/output/
 SelfTalk/vocaset/result/
-SelfTalk/vocaset/*.pkl
-SelfTalk/vocaset/*.npy
+
+# 预训练模型 (通过 volume 挂载，约 3GB)
+SelfTalk/vocaset/vocaset.pth
 
 # 静态文件 (大量视频/图片)
 static/videos/
