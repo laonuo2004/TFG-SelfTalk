@@ -47,6 +47,7 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - PYOPENGL_PLATFORM=osmesa
       - FLASK_ENV=production
+      - HF_ENDPOINT=https://hf-mirror.com
 
     # 健康检查
     healthcheck:
