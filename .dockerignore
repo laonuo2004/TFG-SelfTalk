@@ -53,8 +53,6 @@ SelfTalk/vocaset/result/
 # 原始数据文件
 SelfTalk/vocaset/*.npy
 SelfTalk/vocaset/raw_audio_fixed.pkl
-SelfTalk/vocaset/templates.pkl
-SelfTalk/vocaset/subj_seq_to_idx.pkl
 
 # 预训练模型 (通过 volume 挂载，约 3GB)
 SelfTalk/vocaset/vocaset.pth
