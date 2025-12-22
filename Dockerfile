@@ -55,11 +55,18 @@ RUN git clone https://github.com/MPI-IS/mesh.git /tmp/mesh \
 # 复制项目文件
 COPY . .
 
-# 下载预训练模型 (vocaset.pth)
-# 注意：由于 Google Drive 直接下载较复杂，建议在构建前手动下载
-# 并放置在 SelfTalk/vocaset/vocaset.pth
-# 如果文件存在则使用，否则跳过
+# 创建必要目录
 RUN mkdir -p SelfTalk/vocaset
+
+# 预下载 Hugging Face 模型（使用国内镜像源）
+# 这样容器启动时无需访问 Hugging Face
+ENV HF_ENDPOINT=https://hf-mirror.com
+RUN python -c "from transformers import Wav2Vec2Model, Wav2Vec2ForCTC, Wav2Vec2Processor, Wav2Vec2CTCTokenizer; \
+    Wav2Vec2Model.from_pretrained('jonatasgrosman/wav2vec2-large-xlsr-53-english'); \
+    Wav2Vec2ForCTC.from_pretrained('jonatasgrosman/wav2vec2-large-xlsr-53-english'); \
+    Wav2Vec2Processor.from_pretrained('jonatasgrosman/wav2vec2-large-xlsr-53-english'); \
+    Wav2Vec2CTCTokenizer.from_pretrained('jonatasgrosman/wav2vec2-large-xlsr-53-english'); \
+    Wav2Vec2Processor.from_pretrained('facebook/wav2vec2-large-960h-lv60-self')"
 
 # 设置环境变量
 ENV PYOPENGL_PLATFORM=osmesa
