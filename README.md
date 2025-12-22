@@ -107,11 +107,32 @@ python app.py
 
 ## 🐳 Docker 部署
 
+### 前置要求
+
+1. **安装 Docker**：参考 [Docker 官方文档](https://docs.docker.com/get-docker/)
+2. **GPU 支持**：
+   - **WSL2 + Docker Desktop**：无需额外配置，Docker Desktop 已内置 GPU 支持
+   - **原生 Linux**：需安装 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+
+### 准备数据
+
+在构建之前，请确保以下数据已准备好：
+
+```
+SelfTalk/vocaset/
+├── wav/                  # 音频数据
+├── vertices_npy/         # 顶点数据
+├── templates/            # 模板文件
+│   └── FLAME_sample.ply
+├── templates.pkl         # 模板字典
+└── vocaset.pth          # 预训练模型 (可选)
+```
+
 ### 使用 Docker Compose (推荐)
 
 ```bash
 # 构建并启动
-docker-compose up -d
+docker-compose up -d --build
 
 # 查看日志
 docker-compose logs -f
@@ -129,11 +150,21 @@ docker build -t tfg-selftalk .
 # 运行容器
 docker run -d \
   --gpus all \
-  -p 6009:6009 \
+  -p 6009:5000 \
   -p 8765:8765 \
-  -v ./SelfTalk/vocaset:/app/SelfTalk/vocaset \
+  -v $(pwd)/SelfTalk/vocaset/wav:/app/SelfTalk/vocaset/wav:ro \
+  -v $(pwd)/SelfTalk/vocaset/vertices_npy:/app/SelfTalk/vocaset/vertices_npy:ro \
+  -v $(pwd)/SelfTalk/vocaset/templates:/app/SelfTalk/vocaset/templates:ro \
+  -v $(pwd)/SelfTalk/vocaset/templates.pkl:/app/SelfTalk/vocaset/templates.pkl:ro \
+  -v $(pwd)/SelfTalk/vocaset/save:/app/SelfTalk/vocaset/save \
+  -v $(pwd)/models.json:/app/models.json \
+  --name tfg-selftalk \
   tfg-selftalk
 ```
+
+### 访问应用
+
+启动后访问 http://localhost:6009
 
 ---
 

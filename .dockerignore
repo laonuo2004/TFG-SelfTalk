@@ -1,0 +1,74 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+.eggs
+*.egg
+
+# 虚拟环境
+venv
+.venv
+ENV
+env
+
+# IDE
+.vscode
+.idea
+*.code-workspace
+
+# 测试
+tests/
+
+# 文档
+docs/
+*.md
+!README.md
+
+# 日志
+*.log
+logs/
+log/
+
+# 临时文件
+*.tmp
+*.temp
+.cache
+
+# ============ 大型文件和目录 ============
+# VOCASET 数据 (通过 volume 挂载)
+SelfTalk/vocaset/wav/
+SelfTalk/vocaset/vertices_npy/
+SelfTalk/vocaset/save/
+SelfTalk/vocaset/output/
+SelfTalk/vocaset/result/
+SelfTalk/vocaset/*.pkl
+SelfTalk/vocaset/*.npy
+
+# 静态文件 (大量视频/图片)
+static/videos/
+static/uploads/
+static/*.mp4
+static/*.wav
+static/*.avi
+
+# 上传目录
+uploads/
+
+# 其他大型项目
+SyncTalk/
+GPT-SoVITS/
+
+# AI/工具目录
+.specstory/
+.cursorindexingignore
+
+# mesh 源码 (容器内会重新 clone)
+mesh/

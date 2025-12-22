@@ -13,6 +13,7 @@ dist/
 # Data
 *.wav
 SyncTalk/
+static/
 
 GPT-SoVITS/
 

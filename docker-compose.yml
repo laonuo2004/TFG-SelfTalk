@@ -1,0 +1,59 @@
+# =============================================================================
+# TFG-SelfTalk Docker Compose 配置
+# 使用方法: docker-compose up -d
+# =============================================================================
+
+services:
+  tfg-selftalk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tfg-selftalk
+
+    # GPU 支持 (需要 nvidia-docker)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+    # 端口映射
+    ports:
+      - "6009:5000" # Flask Web 应用
+      - "8765:8765" # WebSocket 实时对话
+
+    # 数据卷挂载
+    volumes:
+      # VOCASET 数据集 (必需)
+      - ./SelfTalk/vocaset/wav:/app/SelfTalk/vocaset/wav:ro
+      - ./SelfTalk/vocaset/vertices_npy:/app/SelfTalk/vocaset/vertices_npy:ro
+      - ./SelfTalk/vocaset/templates:/app/SelfTalk/vocaset/templates:ro
+      - ./SelfTalk/vocaset/templates.pkl:/app/SelfTalk/vocaset/templates.pkl:ro
+
+      # 模型保存目录 (训练输出)
+      - ./SelfTalk/vocaset/save:/app/SelfTalk/vocaset/save
+
+      # 视频输出目录
+      - ./SelfTalk/vocaset/output:/app/SelfTalk/vocaset/output
+
+      # 模型注册文件
+      - ./models.json:/app/models.json
+
+    # 环境变量
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - PYOPENGL_PLATFORM=osmesa
+      - FLASK_ENV=production
+
+    # 健康检查
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # 自动重启
+    restart: unless-stopped

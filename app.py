@@ -547,8 +547,17 @@ def run_ws_server():
 
 # ================== 启动入口 ==================
 if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="TFG-SelfTalk Web Application")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind (default: 0.0.0.0)")
+    parser.add_argument("--port", type=int, default=6009, help="Port to bind (default: 6009)")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    args = parser.parse_args()
+    
     ws_thread = threading.Thread(target=run_ws_server, name="ws-gateway", daemon=True)
     ws_thread.start()
-    print("[MAIN] WS gateway started")
+    print(f"[MAIN] WS gateway started on port {WS_PORT}")
+    print(f"[MAIN] Flask app starting on http://{args.host}:{args.port}")
 
-    app.run(host="0.0.0.0", port=6009, debug=True, use_reloader=False)
+    app.run(host=args.host, port=args.port, debug=args.debug, use_reloader=False)
