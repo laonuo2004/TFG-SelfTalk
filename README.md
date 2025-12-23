@@ -1,4 +1,4 @@
-zhon# TFG-SelfTalk
+# TFG-SelfTalk
 
 基于 SelfTalk 的说话人脸生成对话系统 (Talking Face Generation System)
 
@@ -12,11 +12,12 @@ zhon# TFG-SelfTalk
 
 - 🎓 **模型训练**：在线训练 SelfTalk 模型，实时查看训练日志
 - 🎬 **视频生成**：根据语音生成 3D 说话人脸动画视频
-- 💬 **实时对话**：与 AI 进行语音对话并生成虚拟人视频
+- 💬 **人机对话**：与 AI 进行语音对话并生成虚拟人视频
+- 🕑 **实时对话**：与 AI 进行实时语音对话
 
 ---
 
-## 🚀 快速开始
+## 📦 手动部署
 
 ### 系统要求
 
@@ -25,16 +26,25 @@ zhon# TFG-SelfTalk
 - **内存**：建议 16GB+
 - **磁盘空间**：建议 20GB+ (包含数据集和模型)
 
----
-
-## 📦 手动部署
-
 ### 步骤 1: 安装系统依赖
 
 ```bash
 # Ubuntu / Debian
 sudo apt-get update
-sudo apt-get install -y ffmpeg libboost-dev libgl1-mesa-glx libosmesa6-dev portaudio19-dev
+sudo apt-get install -y \
+    ffmpeg \
+    libboost-dev \
+    libgl1-mesa-glx \
+    libgl1-mesa-dev \
+    libegl1-mesa \
+    libegl1-mesa-dev \
+    libosmesa6 \
+    libosmesa6-dev \
+    libgles2-mesa \
+    libgles2-mesa-dev \
+    portaudio19-dev \
+    libsndfile1 \
+    freeglut3-dev
 ```
 
 ### 步骤 2: 克隆项目
@@ -109,24 +119,11 @@ python app.py
 
 ### 前置要求
 
-1. **安装 Docker**：参考 [Docker 官方文档](https://docs.docker.com/get-docker/)
-2. **GPU 支持**：
-   - **WSL2 + Docker Desktop**：无需额外配置，Docker Desktop 已内置 GPU 支持
-   - **原生 Linux**：需安装 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+本项目需要 GPU 支持。**WSL2 + Docker Desktop** 无需额外配置，Docker Desktop 已内置 GPU 支持；**原生 Linux** 需安装 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)。
 
-### 准备数据
+### 准备数据与预训练模型
 
-在构建之前，请确保以下数据已准备好：
-
-```
-SelfTalk/vocaset/
-├── wav/                  # 音频数据
-├── vertices_npy/         # 顶点数据
-├── templates/            # 模板文件
-│   └── FLAME_sample.ply
-├── templates.pkl         # 模板字典
-└── vocaset.pth          # 预训练模型 (可选)
-```
+在构建之前，请确保你已经完成了手动部署当中的[步骤 7 (可选)](#步骤-7-下载预训练模型可选用于快速测试视频生成与人机对话功能否则需要自行训练模型) 与[步骤 8](#步骤-8-准备-vocaset-数据集)。
 
 ### 使用 Docker Compose (推荐)
 
@@ -154,9 +151,9 @@ docker run -d \
   -p 8765:8765 \
   -v $(pwd)/SelfTalk/vocaset/wav:/app/SelfTalk/vocaset/wav:ro \
   -v $(pwd)/SelfTalk/vocaset/vertices_npy:/app/SelfTalk/vocaset/vertices_npy:ro \
-  -v $(pwd)/SelfTalk/vocaset/templates:/app/SelfTalk/vocaset/templates:ro \
-  -v $(pwd)/SelfTalk/vocaset/templates.pkl:/app/SelfTalk/vocaset/templates.pkl:ro \
+  -v $(pwd)/SelfTalk/vocaset/vocaset.pth:/app/SelfTalk/vocaset/vocaset.pth:ro \
   -v $(pwd)/SelfTalk/vocaset/save:/app/SelfTalk/vocaset/save \
+  -v $(pwd)/SelfTalk/vocaset/output:/app/SelfTalk/vocaset/output \
   -v $(pwd)/models.json:/app/models.json \
   --name tfg-selftalk \
   tfg-selftalk
@@ -170,7 +167,7 @@ docker run -d \
 
 ## 📖 使用说明
 
-> **注意**：首次使用请确保能够访问 Hugging Face 的模型仓库。
+> **注意**：首次使用需下载 Hugging Face 模型。Docker 镜像构建时已通过国内镜像 (hf-mirror.com) 预下载，无需额外配置。手动部署的用户如遇网络问题，可设置环境变量：`export HF_ENDPOINT=https://hf-mirror.com`
 
 ### 模型训练
 
