@@ -19,9 +19,16 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     libboost-dev \
     libgl1-mesa-glx \
+    libgl1-mesa-dev \
+    libegl1-mesa \
+    libegl1-mesa-dev \
+    libosmesa6 \
     libosmesa6-dev \
+    libgles2-mesa \
+    libgles2-mesa-dev \
     portaudio19-dev \
     libsndfile1 \
+    freeglut3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 设置 Python 3.8 为默认
