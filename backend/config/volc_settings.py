@@ -11,7 +11,11 @@ import os
 VOLC_APP_ID: str = os.getenv("VOLC_APP_ID", "6555052099")
 VOLC_ACCESS_TOKEN: str = os.getenv("VOLC_ACCESS_TOKEN", "nn9JZV__kXGKwcGnasJo0aMC3BJr89Jj")
 # Cluster ID: 在控制台开通一句话识别服务后获取
-VOLC_ASR_CLUSTER: str = os.getenv("VOLC_ASR_CLUSTER", "volcengine_input_en")
+# 支持中英文识别回退：优先使用中文识别，失败后回退到英文识别
+VOLC_ASR_CLUSTER_ZH: str = os.getenv("VOLC_ASR_CLUSTER_ZH", "volcengine_input")  # 办公中文识别
+VOLC_ASR_CLUSTER_EN: str = os.getenv("VOLC_ASR_CLUSTER_EN", "volcengine_input_en")  # 办公英文识别
+# 保留旧配置以兼容，但已弃用
+VOLC_ASR_CLUSTER: str = os.getenv("VOLC_ASR_CLUSTER", VOLC_ASR_CLUSTER_ZH)
 VOLC_ASR_WS_URL: str = os.getenv(
     "VOLC_ASR_WS_URL",
     "wss://openspeech.bytedance.com/api/v2/asr",

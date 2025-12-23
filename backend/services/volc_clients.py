@@ -58,20 +58,46 @@ class VolcSpeechRecognizer:
         self,
         appid: str,
         token: str,
-        cluster: str,
+        cluster: str = "",
         ws_url: str = "wss://openspeech.bytedance.com/api/v2/asr",
         uid: str = "streaming_asr_client",
         seg_duration: int = 15000,
         timeout: float = 30.0,
+        clusters: Optional[List[str]] = None,
     ) -> None:
+        """初始化语音识别器.
+        
+        Args:
+            appid: 应用 ID
+            token: 访问令牌
+            cluster: 单个 cluster ID（已弃用，建议使用 clusters）
+            ws_url: WebSocket API 地址
+            uid: 用户 ID
+            seg_duration: 分片时长（毫秒）
+            timeout: 超时时间（秒）
+            clusters: cluster ID 列表，按优先级顺序尝试识别。
+                     如果为 None，则使用 cluster 参数。
+                     典型用法：["volcengine_input", "volcengine_input_en"]
+                     表示优先中文识别，失败后回退到英文识别。
+        """
         self.appid = appid
         self.token = token
-        self.cluster = cluster
         self.ws_url = ws_url
         self.uid = uid
         self.seg_duration = seg_duration
         self.timeout = timeout
         self.success_code = 1000
+        
+        # 支持多 cluster 回退识别
+        if clusters:
+            self.clusters = clusters
+        elif cluster:
+            self.clusters = [cluster]
+        else:
+            self.clusters = ["volcengine_input"]  # 默认中文识别
+        
+        # 保留 cluster 属性以兼容旧代码
+        self.cluster = self.clusters[0]
 
     def _generate_header(
         self,
@@ -141,12 +167,19 @@ class VolcSpeechRecognizer:
         result['payload_msg'] = payload_msg
         return result
 
-    def _construct_request(self, reqid: str, audio_format: str, sample_rate: int) -> Dict[str, Any]:
-        """构建请求参数"""
+    def _construct_request(self, reqid: str, audio_format: str, sample_rate: int, cluster: str = "") -> Dict[str, Any]:
+        """构建请求参数.
+        
+        Args:
+            reqid: 请求 ID
+            audio_format: 音频格式
+            sample_rate: 采样率
+            cluster: 使用的 cluster ID，如果为空则使用默认 cluster
+        """
         return {
             'app': {
                 'appid': self.appid,
-                'cluster': self.cluster,
+                'cluster': cluster or self.cluster,
                 'token': self.token,
             },
             'user': {
@@ -183,10 +216,51 @@ class VolcSpeechRecognizer:
             yield data[offset: data_len], True
 
     def transcribe(self, audio_path: str) -> str:
-        """识别音频文件.
+        """识别音频文件，支持多语言回退.
+        
+        按照 clusters 列表中的顺序依次尝试识别。典型用法是优先尝试中文识别，
+        如果识别失败（例如音频是纯英文），则回退到英文识别。
         
         Args:
             audio_path: 本地音频文件路径
+            
+        Returns:
+            识别出的文本
+            
+        Raises:
+            FileNotFoundError: 音频文件不存在
+            RuntimeError: 所有 cluster 都识别失败
+        """
+        errors = []
+        
+        for i, cluster in enumerate(self.clusters):
+            try:
+                logger.info(f"[ASR] 尝试使用 cluster '{cluster}' 进行识别 ({i+1}/{len(self.clusters)})")
+                text = self._transcribe_with_cluster(audio_path, cluster)
+                logger.info(f"[ASR] 使用 cluster '{cluster}' 识别成功: {text[:50]}...")
+                return text
+            except Exception as e:
+                error_msg = str(e)
+                errors.append(f"[{cluster}] {error_msg}")
+                logger.warning(f"[ASR] cluster '{cluster}' 识别失败: {error_msg}")
+                
+                # 如果是最后一个 cluster，不再继续
+                if i == len(self.clusters) - 1:
+                    break
+                    
+                logger.info(f"[ASR] 回退到下一个 cluster...")
+        
+        # 所有 cluster 都失败
+        raise RuntimeError(
+            f"所有语音识别服务均失败:\n" + "\n".join(f"  - {err}" for err in errors)
+        )
+
+    def _transcribe_with_cluster(self, audio_path: str, cluster: str) -> str:
+        """使用指定的 cluster 识别音频文件.
+        
+        Args:
+            audio_path: 本地音频文件路径
+            cluster: 使用的 cluster ID
             
         Returns:
             识别出的文本
@@ -208,6 +282,8 @@ class VolcSpeechRecognizer:
         # 获取音频格式
         audio_format = path.suffix.replace(".", "") or "wav"
         sample_rate = 16000  # 默认采样率
+        nchannels = 1
+        sampwidth = 2
         
         # 如果是 wav 文件，尝试获取实际采样率
         if audio_format == "wav":
@@ -224,7 +300,7 @@ class VolcSpeechRecognizer:
             import websockets
             
             reqid = str(uuid.uuid4())
-            request_params = self._construct_request(reqid, audio_format, sample_rate)
+            request_params = self._construct_request(reqid, audio_format, sample_rate, cluster)
             
             # 构建 full client request
             payload_bytes = json.dumps(request_params).encode('utf-8')
@@ -299,7 +375,6 @@ class VolcSpeechRecognizer:
         if not text:
             raise RuntimeError(f"ASR 未返回有效文本: {result}")
         
-        logger.info(f"[ASR] 识别成功: {text[:50]}...")
         return text
 
     @staticmethod
@@ -769,13 +844,17 @@ class VolcVoiceCloner:
 
 
 # 单例实例，供业务层直接使用
+# 配置中英文识别回退：优先中文识别，失败后回退到英文识别
 speech_recognizer = VolcSpeechRecognizer(
     appid=volc_settings.VOLC_APP_ID,
     token=volc_settings.VOLC_ACCESS_TOKEN,
-    cluster=volc_settings.VOLC_ASR_CLUSTER,
     ws_url=volc_settings.VOLC_ASR_WS_URL,
     uid=volc_settings.VOLC_UID,
     timeout=volc_settings.HTTP_TIMEOUT,
+    clusters=[
+        volc_settings.VOLC_ASR_CLUSTER_ZH,  # 优先中文识别
+        volc_settings.VOLC_ASR_CLUSTER_EN,  # 回退到英文识别
+    ],
 )
 
 chat_llm = VolcChatLLM(
